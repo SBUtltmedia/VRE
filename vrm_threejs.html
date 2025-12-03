@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Three.js VRM Test</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    
+    <!-- These are from the project -->
+    <script src="js/mmdparser.js"></script>
+    <script src="js/CCDIKSolver.js"></script>
+    <script src="js/BVHLoader.js"></script>
+    <script src="js/MMDLoader.js"></script>
+    <script src="js/aframe-vrm.js"></script>
+
+    <script>
+        // 1. Setup scene, camera, renderer
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xbbbbbb);
+
+        const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+        camera.position.set( 0, 1.2, 1.5 );
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild( renderer.domElement );
+
+        const light = new THREE.DirectionalLight(0xffffff, 1.0);
+        light.position.set(1, 1, 1).normalize();
+        scene.add(light);
+        const ambientLight = new THREE.AmbientLight(0x404040, 2.0);
+        scene.add(ambientLight);
+        
+        scene.add(new THREE.GridHelper());
+
+        // 2. Load VRM model
+        const vrmUrl = 'https://raw.githack.com/vrm-c/UniVRM/master/Tests/Models/Alicia_vrm-0.51/AliciaSolid_vrm-0.51.vrm';
+        const vrmaUrl = 'VRMA/Clapping.vrma';
+
+        let vrmAvatar = null;
+        // Use the globally exposed VRMLoader
+        const vrmLoader = new VRMLoader(new THREE.GLTFLoader());
+
+        console.log('Loading VRM model...');
+        vrmLoader.load(vrmUrl).then((avatar) => {
+            console.log('VRM model loaded', avatar);
+            vrmAvatar = avatar;
+            scene.add(vrmAvatar.model);
+            
+            // Set model rotation to face camera
+            vrmAvatar.model.rotation.y = Math.PI;
+
+            // 3. Load and play animation
+            console.log('Loading VRMA animation...');
+            // Use the globally exposed VRMALoaderWrapper
+            const vrmaLoader = new VRMALoaderWrapper();
+            vrmaLoader.load(vrmaUrl, vrmAvatar, {}).then((clip) => {
+                console.log('VRMA animation loaded', clip);
+                vrmAvatar.mixer.clipAction(clip).play();
+                console.log('Animation playing.');
+            }).catch(e => console.error('Error loading animation', e));
+        }).catch(e => console.error('Error loading VRM', e));
+
+        // 4. Animation loop
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame( animate );
+            const delta = clock.getDelta();
+            if (vrmAvatar) {
+                vrmAvatar.update(delta);
+            }
+            renderer.render( scene, camera );
+        }
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }, false);
+    </script>
+</body>
+</html>
