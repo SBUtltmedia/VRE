@@ -460,8 +460,8 @@
       }
     }
     _springBoneSystem() {
-      let _q0 = new CANNON.Quaternion();
-      let _q1 = new CANNON.Quaternion();
+      let _q0 = new THREE.Quaternion();
+      let _q1 = new THREE.Quaternion();
       let _v0 = new CANNON.Vec3();
       return {
         world: null,
@@ -625,77 +625,77 @@
   var VMDLoaderWrapper = class {
     constructor() {
       this.boneMapping = [
-        { "bone": "hips", "nodeNames": ["\u30BB\u30F3\u30BF\u30FC", "center"] },
-        { "bone": "spine", "nodeNames": ["\u4E0A\u534A\u8EAB", "upper body"] },
-        { "bone": "chest", "nodeNames": ["\u4E0A\u534A\u8EAB2", "upper body2"] },
-        { "bone": "neck", "nodeNames": ["\u9996", "neck"] },
-        { "bone": "head", "nodeNames": ["\u982D", "head"] },
-        { "bone": "leftShoulder", "nodeNames": ["\u5DE6\u80A9", "shoulder_L"] },
-        { "bone": "leftUpperArm", "nodeNames": ["\u5DE6\u8155", "arm_L"] },
-        { "bone": "leftLowerArm", "nodeNames": ["\u5DE6\u3072\u3058", "elbow_L"] },
-        { "bone": "leftHand", "nodeNames": ["\u5DE6\u624B\u9996", "wrist_L"] },
-        { "bone": "rightShoulder", "nodeNames": ["\u53F3\u80A9", "shoulder_R"] },
-        { "bone": "rightUpperArm", "nodeNames": ["\u53F3\u8155", "arm_R"] },
-        { "bone": "rightLowerArm", "nodeNames": ["\u53F3\u3072\u3058", "elbow_R"] },
-        { "bone": "rightHand", "nodeNames": ["\u53F3\u624B\u9996", "wrist_R"] },
-        { "bone": "leftUpperLeg", "nodeNames": ["\u5DE6\u8DB3", "leg_L"] },
-        { "bone": "leftLowerLeg", "nodeNames": ["\u5DE6\u3072\u3056", "knee_L"] },
-        { "bone": "leftFoot", "nodeNames": ["\u5DE6\u8DB3\u9996", "ankle_L"] },
-        { "bone": "leftToes", "nodeNames": ["\u5DE6\u3064\u307E\u5148", "L toe"] },
-        { "bone": "rightUpperLeg", "nodeNames": ["\u53F3\u8DB3", "leg_R"] },
-        { "bone": "rightLowerLeg", "nodeNames": ["\u53F3\u3072\u3056", "knee_R"] },
-        { "bone": "rightFoot", "nodeNames": ["\u53F3\u8DB3\u9996", "ankle_R"] },
-        { "bone": "rightToes", "nodeNames": ["\u53F3\u3064\u307E\u5148", "R toe"] },
-        { "bone": "leftEye", "nodeNames": ["\u5DE6\u76EE", "eye_L"] },
-        { "bone": "rightEye", "nodeNames": ["\u53F3\u76EE", "eye_R"] },
-        { "bone": "leftThumbProximal", "nodeNames": ["\u5DE6\u89AA\u6307\uFF10", "thumb0_L"] },
-        { "bone": "leftThumbIntermediate", "nodeNames": ["\u5DE6\u89AA\u6307\uFF11", "thumb1_L"] },
-        { "bone": "leftThumbDistal", "nodeNames": ["\u5DE6\u89AA\u6307\uFF12", "thumb2_L"] },
-        { "bone": "leftIndexProximal", "nodeNames": ["\u5DE6\u4EBA\u6307\uFF11", "fore1_L"] },
-        { "bone": "leftIndexIntermediate", "nodeNames": ["\u5DE6\u4EBA\u6307\uFF12", "fore2_L"] },
-        { "bone": "leftIndexDistal", "nodeNames": ["\u5DE6\u4EBA\u6307\uFF13", "fore3_L"] },
-        { "bone": "leftMiddleProximal", "nodeNames": ["\u5DE6\u4E2D\u6307\uFF11", "middle1_L"] },
-        { "bone": "leftMiddleIntermediate", "nodeNames": ["\u5DE6\u4E2D\u6307\uFF12", "middle2_L"] },
-        { "bone": "leftMiddleDistal", "nodeNames": ["\u5DE6\u4E2D\u6307\uFF13", "middle3_L"] },
-        { "bone": "leftRingProximal", "nodeNames": ["\u5DE6\u85AC\u6307\uFF11", "third1_L"] },
-        { "bone": "leftRingIntermediate", "nodeNames": ["\u5DE6\u85AC\u6307\uFF12", "third2_L"] },
-        { "bone": "leftRingDistal", "nodeNames": ["\u5DE6\u85AC\u6307\uFF13", "third3_L"] },
-        { "bone": "leftLittleProximal", "nodeNames": ["\u5DE6\u5C0F\u6307\uFF11", "little1_L"] },
-        { "bone": "leftLittleIntermediate", "nodeNames": ["\u5DE6\u5C0F\u6307\uFF12", "little2_L"] },
-        { "bone": "leftLittleDistal", "nodeNames": ["\u5DE6\u5C0F\u6307\uFF13", "little3_L"] },
-        { "bone": "rightThumbProximal", "nodeNames": ["\u53F3\u89AA\u6307\uFF10", "thumb0_R"] },
-        { "bone": "rightThumbIntermediate", "nodeNames": ["\u53F3\u89AA\u6307\uFF11", "thumb1_R"] },
-        { "bone": "rightThumbDistal", "nodeNames": ["\u53F3\u89AA\u6307\uFF12", "thumb2_R"] },
-        { "bone": "rightIndexProximal", "nodeNames": ["\u53F3\u4EBA\u6307\uFF11", "fore1_R"] },
-        { "bone": "rightIndexIntermediate", "nodeNames": ["\u53F3\u4EBA\u6307\uFF12", "fore2_R"] },
-        { "bone": "rightIndexDistal", "nodeNames": ["\u53F3\u4EBA\u6307\uFF13", "fore3_R"] },
-        { "bone": "rightMiddleProximal", "nodeNames": ["\u53F3\u4E2D\u6307\uFF11", "middle1_R"] },
-        { "bone": "rightMiddleIntermediate", "nodeNames": ["\u53F3\u4E2D\u6307\uFF12", "middle2_R"] },
-        { "bone": "rightMiddleDistal", "nodeNames": ["\u53F3\u4E2D\u6307\uFF13", "middle3_R"] },
-        { "bone": "rightRingProximal", "nodeNames": ["\u53F3\u85AC\u6307\uFF11", "third1_R"] },
-        { "bone": "rightRingIntermediate", "nodeNames": ["\u53F3\u85AC\u6307\uFF12", "third2_R"] },
-        { "bone": "rightRingDistal", "nodeNames": ["\u53F3\u85AC\u6307\uFF13", "third3_R"] },
-        { "bone": "rightLittleProximal", "nodeNames": ["\u53F3\u5C0F\u6307\uFF11", "little1_R"] },
-        { "bone": "rightLittleIntermediate", "nodeNames": ["\u53F3\u5C0F\u6307\uFF12", "little2_R"] },
-        { "bone": "rightLittleDistal", "nodeNames": ["\u53F3\u5C0F\u6307\uFF13", "little3_R"] }
+        { "bone": "hips", "nodeNames": ["センター", "center"] },
+        { "bone": "spine", "nodeNames": ["上半身", "upper body"] },
+        { "bone": "chest", "nodeNames": ["上半身2", "upper body2"] },
+        { "bone": "neck", "nodeNames": ["首", "neck"] },
+        { "bone": "head", "nodeNames": ["頭", "head"] },
+        { "bone": "leftShoulder", "nodeNames": ["左肩", "shoulder_L"] },
+        { "bone": "leftUpperArm", "nodeNames": ["左腕", "arm_L"] },
+        { "bone": "leftLowerArm", "nodeNames": ["左ひじ", "elbow_L"] },
+        { "bone": "leftHand", "nodeNames": ["左手首", "wrist_L"] },
+        { "bone": "rightShoulder", "nodeNames": ["右肩", "shoulder_R"] },
+        { "bone": "rightUpperArm", "nodeNames": ["右腕", "arm_R"] },
+        { "bone": "rightLowerArm", "nodeNames": ["右ひじ", "elbow_R"] },
+        { "bone": "rightHand", "nodeNames": ["右手首", "wrist_R"] },
+        { "bone": "leftUpperLeg", "nodeNames": ["左足", "leg_L"] },
+        { "bone": "leftLowerLeg", "nodeNames": ["左ひざ", "knee_L"] },
+        { "bone": "leftFoot", "nodeNames": ["左足首", "ankle_L"] },
+        { "bone": "leftToes", "nodeNames": ["左つま先", "L toe"] },
+        { "bone": "rightUpperLeg", "nodeNames": ["右足", "leg_R"] },
+        { "bone": "rightLowerLeg", "nodeNames": ["右ひざ", "knee_R"] },
+        { "bone": "rightFoot", "nodeNames": ["右足首", "ankle_R"] },
+        { "bone": "rightToes", "nodeNames": ["右つま先", "R toe"] },
+        { "bone": "leftEye", "nodeNames": ["左目", "eye_L"] },
+        { "bone": "rightEye", "nodeNames": ["右目", "eye_R"] },
+        { "bone": "leftThumbProximal", "nodeNames": ["左親指０", "thumb0_L"] },
+        { "bone": "leftThumbIntermediate", "nodeNames": ["左親指１", "thumb1_L"] },
+        { "bone": "leftThumbDistal", "nodeNames": ["左親指２", "thumb2_L"] },
+        { "bone": "leftIndexProximal", "nodeNames": ["左人指１", "fore1_L"] },
+        { "bone": "leftIndexIntermediate", "nodeNames": ["左人指２", "fore2_L"] },
+        { "bone": "leftIndexDistal", "nodeNames": ["左人指３", "fore3_L"] },
+        { "bone": "leftMiddleProximal", "nodeNames": ["左中指１", "middle1_L"] },
+        { "bone": "leftMiddleIntermediate", "nodeNames": ["左中指２", "middle2_L"] },
+        { "bone": "leftMiddleDistal", "nodeNames": ["左中指３", "middle3_L"] },
+        { "bone": "leftRingProximal", "nodeNames": ["左薬指１", "third1_L"] },
+        { "bone": "leftRingIntermediate", "nodeNames": ["左薬指２", "third2_L"] },
+        { "bone": "leftRingDistal", "nodeNames": ["左薬指３", "third3_L"] },
+        { "bone": "leftLittleProximal", "nodeNames": ["左小指１", "little1_L"] },
+        { "bone": "leftLittleIntermediate", "nodeNames": ["左小指２", "little2_L"] },
+        { "bone": "leftLittleDistal", "nodeNames": ["左小指３", "little3_L"] },
+        { "bone": "rightThumbProximal", "nodeNames": ["右親指０", "thumb0_R"] },
+        { "bone": "rightThumbIntermediate", "nodeNames": ["右親指１", "thumb1_R"] },
+        { "bone": "rightThumbDistal", "nodeNames": ["右親指２", "thumb2_R"] },
+        { "bone": "rightIndexProximal", "nodeNames": ["右人指１", "fore1_R"] },
+        { "bone": "rightIndexIntermediate", "nodeNames": ["右人指２", "fore2_R"] },
+        { "bone": "rightIndexDistal", "nodeNames": ["右人指３", "fore3_R"] },
+        { "bone": "rightMiddleProximal", "nodeNames": ["右中指１", "middle1_R"] },
+        { "bone": "rightMiddleIntermediate", "nodeNames": ["右中指２", "middle2_R"] },
+        { "bone": "rightMiddleDistal", "nodeNames": ["右中指３", "middle3_R"] },
+        { "bone": "rightRingProximal", "nodeNames": ["右薬指１", "third1_R"] },
+        { "bone": "rightRingIntermediate", "nodeNames": ["右薬指２", "third2_R"] },
+        { "bone": "rightRingDistal", "nodeNames": ["右薬指３", "third3_R"] },
+        { "bone": "rightLittleProximal", "nodeNames": ["右小指１", "little1_R"] },
+        { "bone": "rightLittleIntermediate", "nodeNames": ["右小指２", "little2_R"] },
+        { "bone": "rightLittleDistal", "nodeNames": ["右小指３", "little3_R"] }
       ];
       this.blendShapeMap = {
-        "A": "\u3042",
-        "I": "\u3044",
-        "U": "\u3046",
-        "E": "\u3048",
-        "O": "\u304A",
-        "BLINK": "\u307E\u3070\u305F\u304D"
+        "A": "あ",
+        "I": "い",
+        "U": "う",
+        "E": "え",
+        "O": "お",
+        "BLINK": "まばたき"
       };
       this.rotationOffsets = {
         "leftUpperArm": -38 * THREE.MathUtils.DEG2RAD,
         "rightUpperArm": 38 * THREE.MathUtils.DEG2RAD
       };
       this.ikConfigs = [
-        { target: "\u5DE6\u8DB3\uFF29\uFF2B", bones: [`leftFoot`, "leftLowerLeg", "leftUpperLeg"] },
-        { target: "\u53F3\u8DB3\uFF29\uFF2B", bones: [`rightFoot`, "rightLowerLeg", "rightUpperLeg"] },
-        { target: "\u5DE6\u3064\u307E\u5148\uFF29\uFF2B", parent: 0, bones: [`leftToes`, `leftFoot`] },
-        { target: "\u53F3\u3064\u307E\u5148\uFF29\uFF2B", parent: 1, bones: [`rightToes`, `rightFoot`] }
+        { target: "左足ＩＫ", bones: [`leftFoot`, "leftLowerLeg", "leftUpperLeg"] },
+        { target: "右足ＩＫ", bones: [`rightFoot`, "rightLowerLeg", "rightUpperLeg"] },
+        { target: "左つま先ＩＫ", parent: 0, bones: [`leftToes`, `leftFoot`] },
+        { target: "右つま先ＩＫ", parent: 1, bones: [`rightToes`, `rightFoot`] }
       ];
       this.boneConstraints = {
         "leftLowerLeg": { min: new THREE.Vector3(-175 * Math.PI / 180, 0, 0), max: new THREE.Vector3(0, 0, 0) },
@@ -753,7 +753,7 @@
       let rot2 = new THREE.Quaternion();
       return await new Promise((resolve, reject) => {
         loader.loadVMD(url, async (vmd) => {
-          let lowerBody = vmd.motions.filter((m) => m.boneName == "\u4E0B\u534A\u8EAB");
+          let lowerBody = vmd.motions.filter((m) => m.boneName == "下半身");
           if (lowerBody.length) {
             lowerBody.sort((a, b) => a.frameNum - b.frameNum);
             let update = (target, inv) => {
@@ -773,8 +773,8 @@
                 m.rotation = rot.fromArray(m.rotation).multiply(r).toArray();
               }
             };
-            update(vmd.motions.filter((m) => m.boneName == "\u30BB\u30F3\u30BF\u30FC"), false);
-            update(vmd.motions.filter((m) => m.boneName == "\u4E0A\u534A\u8EAB"), true);
+            update(vmd.motions.filter((m) => m.boneName == "センター"), false);
+            update(vmd.motions.filter((m) => m.boneName == "上半身"), true);
             lowerBody.forEach((m) => m.rotation = [0, 0, 0, 1]);
           }
           for (let m of vmd.motions) {
@@ -1023,36 +1023,16 @@
       return await new Promise((resolve, reject) => {
         const loader = new THREE.GLTFLoader();
 
-        // Register VRMAnimationLoaderPlugin to properly load VRMA files
-        const vrmAnimPlugin = {
-          name: 'VRMAnimationLoaderPlugin',
-          beforeRoot: function() {},
-          afterRoot: async function(gltf) {
-            // Extract VRM animations from userData
-            const vrmAnimations = gltf.userData.vrmAnimations || [];
-            return gltf;
-          }
-        };
-
-        loader.register((parser) => vrmAnimPlugin);
-
         loader.load(url, (gltf) => {
           try {
+            // VRMA files are glTF with VRMC_vrm_animation extension
             console.log('VRMA GLTF loaded');
             console.log('GLTF animations count:', gltf.animations ? gltf.animations.length : 0);
-            console.log('GLTF userData.vrmAnimations:', gltf.userData.vrmAnimations ? gltf.userData.vrmAnimations.length : 0);
+            console.log('GLTF scene nodes count:', gltf.scene ? gltf.scene.children.length : 0);
 
-            // Try to use VRM animations from userData first (proper VRMA format)
-            if (gltf.userData.vrmAnimations && gltf.userData.vrmAnimations.length > 0) {
-              const vrmAnimation = gltf.userData.vrmAnimations[0];
-              console.log('Using VRM animation from userData');
-
-              // Create animation clip from VRM animation data
-              const clip = this.createVRMAnimationClip(vrmAnimation, avatar);
-              resolve(clip);
-            }
-            // Fallback to standard glTF animations if available
-            else if (gltf.animations && gltf.animations.length > 0) {
+            // For now, try to use standard glTF animations if available
+            if (gltf.animations && gltf.animations.length > 0) {
+              // Use the first animation in the VRMA file
               const clip = gltf.animations[0];
               console.log('Using glTF animation:', clip.name, 'with', clip.tracks.length, 'tracks');
 
@@ -1085,7 +1065,7 @@
         'leftEye', 'rightEye', 'jaw'
       ];
 
-      console.log('Starting track name remapping...');
+      console.log('Starting track name remapping for VRMA...');
       console.log('Avatar bones available:', Object.keys(avatar.bones));
 
       clip.tracks.forEach((track, index) => {
@@ -1106,7 +1086,8 @@
             // Get the actual bone from avatar
             const bone = avatar.bones[camelCaseName];
             if (bone) {
-              // Remap to actual bone name
+              // Remap to actual bone name - VRMA animations are already in VRM coordinate space
+              // so we don't need to apply any coordinate transformations, just remap names
               track.name = bone.name + '.' + property;
               if (index < 5) {
                 console.log('  -> Remapped to:', track.name);
@@ -1119,45 +1100,29 @@
           }
         }
       });
-      console.log('Track remapping complete');
 
-      // Apply coordinate system transformation for rotations and fix interpolation paths
+      // VRMA animations are already in VRM coordinate space - no transforms needed
+      // Just ensure shortest path interpolation for smooth animation
       clip.tracks.forEach((track) => {
         if (track.name.endsWith('.quaternion')) {
-          // The same transformation as before
-          const newValues = [];
-          for (let i = 0; i < track.values.length; i += 4) {
-            const qx = track.values[i];
-            const qy = track.values[i + 1];
-            const qz = track.values[i + 2];
-            const qw = track.values[i + 3];
-            newValues.push(-qx, qy, -qz, qw);
-          }
-          
-          // Post-process to ensure shortest path for interpolation
-          for (let i = 4; i < newValues.length; i += 4) {
-            const x1 = newValues[i - 4];
-            const y1 = newValues[i - 3];
-            const z1 = newValues[i - 2];
-            const w1 = newValues[i - 1];
+          // Ensure shortest path interpolation between quaternion keyframes
+          for (let i = 4; i < track.values.length; i += 4) {
+            const dot = track.values[i - 4] * track.values[i] +
+                       track.values[i - 3] * track.values[i + 1] +
+                       track.values[i - 2] * track.values[i + 2] +
+                       track.values[i - 1] * track.values[i + 3];
 
-            const x2 = newValues[i];
-            const y2 = newValues[i + 1];
-            const z2 = newValues[i + 2];
-            const w2 = newValues[i + 3];
-
-            // if dot product is negative, flip the current quaternion
-            if (x1 * x2 + y1 * y2 + z1 * z2 + w1 * w2 < 0) {
-              newValues[i] = -x2;
-              newValues[i + 1] = -y2;
-              newValues[i + 2] = -z2;
-              newValues[i + 3] = -w2;
+            if (dot < 0) {
+              track.values[i] = -track.values[i];
+              track.values[i + 1] = -track.values[i + 1];
+              track.values[i + 2] = -track.values[i + 2];
+              track.values[i + 3] = -track.values[i + 3];
             }
           }
-
-          track.values = newValues;
         }
       });
+
+      console.log('Track remapping complete - VRMA used as-is (native VRM coordinate space)');
     }
 
     createVRMAnimationClip(vrmAnimation, avatar) {
@@ -1221,29 +1186,10 @@
         }
       }
 
-      // Process lookAt animations using VRMLookAtQuaternionProxy
+      // Process lookAt animations
       if (vrmAnimation.lookAtTrack && avatar.modules.lookat) {
-        // Setup VRMLookAtQuaternionProxy if not already created
-        if (!avatar._lookAtQuaternionProxy && avatar.modules.lookat) {
-          // Create a simple quaternion proxy object for look-at animations
-          const lookAtProxy = new THREE.Object3D();
-          lookAtProxy.name = 'lookAtQuaternionProxy';
-          avatar.model.add(lookAtProxy);
-          avatar._lookAtQuaternionProxy = lookAtProxy;
-
-          console.log('Created VRMLookAtQuaternionProxy for animation');
-        }
-
-        if (avatar._lookAtQuaternionProxy) {
-          const lookAtTrack = vrmAnimation.lookAtTrack;
-          if (lookAtTrack.rotation) {
-            tracks.push(new THREE.QuaternionKeyframeTrack(
-              avatar._lookAtQuaternionProxy.name + '.quaternion',
-              lookAtTrack.rotation.times,
-              lookAtTrack.rotation.values
-            ));
-          }
-        }
+        // LookAt animation would need special handling
+        // For now, skip it as it requires quaternion proxy setup
       }
 
       return new THREE.AnimationClip(
@@ -1255,8 +1201,7 @@
   };
 
   // src/aframe-vrm.js
-  if (globalThis.AFRAME) {
-    AFRAME.registerComponent("vrm", {
+  AFRAME.registerComponent("vrm", {
     schema: {
       src: { default: "" },
       firstPerson: { default: false },
@@ -1724,7 +1669,7 @@
       this.qbinds = [];
       let setupIkChain = (boneNames, targetEl, offset) => {
         if (targetEl == null) {
-          targetEl = document.createElement("a-box");
+          targetEl = document.createElement("a-entity");
           targetEl.classList.add("collidable");
           targetEl.setAttribute("xy-drag-control", {});
           targetEl.setAttribute("geometry", { width: 0.05, depth: 0.05, height: 0.05 });
@@ -1814,7 +1759,7 @@
                 return;
               let a = ikbone.userData.quaternion.angleTo(ikbone.quaternion);
               if (a > 0.2) {
-                ikbone.userData.quaternion.slerp(ikbone.quaternion, 0.2 / a);
+                ikbone.userData.quaternion.slerp(ikbone.userData.quaternion, 0.2 / a);
               } else {
                 ikbone.userData.quaternion.copy(ikbone.quaternion);
               }
@@ -1835,7 +1780,5 @@
       }
     }
   });
-  globalThis.VRMLoader = VRMLoader;
-  globalThis.VRMALoaderWrapper = VRMALoaderWrapper;
 })();
 //# sourceMappingURL=aframe-vrm.js.map

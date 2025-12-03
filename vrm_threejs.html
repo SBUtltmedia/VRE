@@ -2,21 +2,24 @@
 <html>
 <head>
     <title>Three.js VRM Test</title>
+    <meta charset="utf-8">
     <style>
         body { margin: 0; }
         canvas { display: block; }
     </style>
 </head>
 <body>
-    <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     
-    <!-- These are from the project -->
+    <!-- Scripts from the user's project -->
     <script src="js/mmdparser.js"></script>
     <script src="js/CCDIKSolver.js"></script>
     <script src="js/BVHLoader.js"></script>
     <script src="js/MMDLoader.js"></script>
-    <script src="js/aframe-vrm.js"></script>
+    <!-- Our new standalone script -->
+    <script src="js/aframe-vrm-standalone.js"></script>
 
     <script>
         // 1. Setup scene, camera, renderer
@@ -30,40 +33,80 @@
         renderer.setSize( window.innerWidth, window.innerHeight );
         renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild( renderer.domElement );
+        
+        const controls = new THREE.OrbitControls( camera, renderer.domElement );
+        controls.target.set( 0, 1.0, 0 );
+        controls.update();
 
-        const light = new THREE.DirectionalLight(0xffffff, 1.0);
+        const light = new THREE.DirectionalLight(0xffffff);
         light.position.set(1, 1, 1).normalize();
         scene.add(light);
-        const ambientLight = new THREE.AmbientLight(0x404040, 2.0);
+        const ambientLight = new THREE.AmbientLight(0xcccccc);
         scene.add(ambientLight);
         
         scene.add(new THREE.GridHelper());
 
         // 2. Load VRM model
-        const vrmUrl = 'https://raw.githack.com/vrm-c/UniVRM/master/Tests/Models/Alicia_vrm-0.51/AliciaSolid_vrm-0.51.vrm';
+        const vrmUrl = 'models/Asian/Asian_F_1_Busi.vrm';
         const vrmaUrl = 'VRMA/Clapping.vrma';
 
-        let vrmAvatar = null;
-        // Use the globally exposed VRMLoader
-        const vrmLoader = new VRMLoader(new THREE.GLTFLoader());
+        let currentVrm = null;
+        // Use the globally exposed VRMLoader from aframe-vrm-standalone.js
+        const loader = new VRMLoader();
 
         console.log('Loading VRM model...');
-        vrmLoader.load(vrmUrl).then((avatar) => {
-            console.log('VRM model loaded', avatar);
-            vrmAvatar = avatar;
-            scene.add(vrmAvatar.model);
+        loader.load(vrmUrl).then((avatar) => {
+            console.log('VRM model loaded:', avatar);
+            currentVrm = avatar;
+            scene.add(currentVrm.model);
             
-            // Set model rotation to face camera
-            vrmAvatar.model.rotation.y = Math.PI;
+            currentVrm.model.rotation.y = Math.PI;
 
             // 3. Load and play animation
             console.log('Loading VRMA animation...');
             // Use the globally exposed VRMALoaderWrapper
             const vrmaLoader = new VRMALoaderWrapper();
-            vrmaLoader.load(vrmaUrl, vrmAvatar, {}).then((clip) => {
-                console.log('VRMA animation loaded', clip);
-                vrmAvatar.mixer.clipAction(clip).play();
-                console.log('Animation playing.');
+            vrmaLoader.load(vrmaUrl, currentVrm, {}).then((clip) => {
+                console.log('VRMA animation loaded:', clip);
+                if (clip && currentVrm && currentVrm.mixer) {
+                    // Apply the same quaternion fix as before
+                    clip.tracks.forEach((track) => {
+                      if (track.name.endsWith('.quaternion')) {
+                        const newValues = [];
+                        for (let i = 0; i < track.values.length; i += 4) {
+                          const qx = track.values[i];
+                          const qy = track.values[i + 1];
+                          const qz = track.values[i + 2];
+                          const qw = track.values[i + 3];
+                          newValues.push(-qx, qy, -qz, qw);
+                        }
+                        
+                        // Post-process to ensure shortest path for interpolation
+                        for (let i = 4; i < newValues.length; i += 4) {
+                          const x1 = newValues[i - 4];
+                          const y1 = newValues[i - 3];
+                          const z1 = newValues[i - 2];
+                          const w1 = newValues[i - 1];
+                          const x2 = newValues[i];
+                          const y2 = newValues[i + 1];
+                          const z2 = newValues[i + 2];
+                          const w2 = newValues[i + 3];
+                          if (x1 * x2 + y1 * y2 + z1 * z2 + w1 * w2 < 0) {
+                            newValues[i] = -x2;
+                            newValues[i + 1] = -y2;
+                            newValues[i + 2] = -z2;
+                            newValues[i + 3] = -w2;
+                          }
+                        }
+                        track.values = newValues;
+                      }
+                    });
+
+                    console.log('Playing animation clip:', clip.name);
+                    currentVrm.mixer.clipAction(clip).play();
+                } else {
+                    console.error('Animation clip, VRM object, or VRM mixer not found.');
+                }
             }).catch(e => console.error('Error loading animation', e));
         }).catch(e => console.error('Error loading VRM', e));
 
@@ -72,8 +115,8 @@
         function animate() {
             requestAnimationFrame( animate );
             const delta = clock.getDelta();
-            if (vrmAvatar) {
-                vrmAvatar.update(delta);
+            if (currentVrm) {
+                currentVrm.update(delta);
             }
             renderer.render( scene, camera );
         }
