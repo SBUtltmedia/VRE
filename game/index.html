@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VRM Jump Game</title>
+    <meta name="description" content="A-Frame VRM Jump Game">
+    <script src="../js/aframe-v1.7.1.js"></script>
+    <!-- Required three-vrm libraries for A-Frame VRM bundle -->
+    <script src="../js/three-vrm.js"></script>
+    <script src="../js/three-vrm-animation.js"></script>
+    <!-- Custom A-Frame VRM component bundle -->
+    <script src="../js/aframe-vrm-bundle.js"></script>
+    
+    <!-- Our custom jump-to component -->
+    <script src="jumpTo.js"></script>
+
+    <style>
+        body { margin: 0; overflow: hidden; }
+        .clickable { cursor: pointer; } /* For visual feedback on clickable elements */
+    </style>
+</head>
+<body>
+    <a-scene background="color: #4CAF50" cursor="rayOrigin: mouse" raycaster="objects: .clickable"> <!-- Green background for a 'game' feel -->
+        <!-- Camera -->
+        <a-entity camera look-controls position="0 1.6 5"></a-entity>
+
+        <!-- Ground Plane -->
+        <!-- Plane is 50x50 units. A VRM at scale 2 will be roughly 3.4m tall, which is about 1/15th of the plane's width. -->
+        <a-plane id="ground" width="50" height="50" rotation="-90 0 0" color="#7BC8A4" shadow="receive: true" class="clickable"></a-plane>
+
+        <!-- VRM Entity -->
+        <a-entity
+            id="player-vrm"
+            vrm
+            vrm-anim
+            jump-to="ground: #ground;"
+            position="0 0 0"
+            scale="0.5 0.5 0.5"
+            shadow="cast: true;"
+        ></a-entity>
+
+        <!-- Lights -->
+        <a-entity light="type: ambient; color: #BBB"></a-entity>
+        <a-entity light="type: directional; color: #FFF; intensity: 0.6" position="-0.5 1 1"></a-entity>
+
+    </a-scene>
+</body>
+</html>
