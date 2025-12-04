@@ -2,7 +2,8 @@ AFRAME.registerComponent('jump-to', {
   schema: {
     ground: {type: 'selector'},
     jumpStride: {default: 5.0}, // Desired distance per jump in meters
-    jumpHeight: {default: 1.5}
+    jumpHeight: {default: 1.5},
+    jumpArcHeightScale: {default: 0.3}
   },
 
   init: function () {
@@ -253,7 +254,7 @@ AFRAME.registerComponent('jump-to', {
     this.jumpVector = new THREE.Vector3();
     this.segmentDuration = 0;
     this.segmentTime = 0;
-    this.animSpeedScale = 5.0; 
+    this.animSpeedScale = 2.0; 
 
     this.mixer = null;
     this.idleAction = null;
@@ -415,7 +416,10 @@ AFRAME.registerComponent('jump-to', {
 
     // --- Movement ---
     const currentBase = new THREE.Vector3().copy(this.jumpStartPos).addScaledVector(this.jumpVector, t);
-    const yOffset = 4 * this.data.jumpHeight * t * (1 - t);
+    
+    // Split the trajectory into 3 hops to match the animation clip
+    const hopProgress = (t * 3) % 1;
+    const yOffset = 4 * (this.data.jumpHeight * this.data.jumpArcHeightScale) * hopProgress * (1 - hopProgress);
     currentBase.y += yOffset;
 
     this.el.object3D.position.copy(currentBase);
