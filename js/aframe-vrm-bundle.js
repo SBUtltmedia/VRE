@@ -127,7 +127,8 @@
     AFRAME.registerComponent('vrm-anim', {
       schema: {
         src: { type: 'string' },
-        loop: { default: true }
+        loop: { default: true },
+        fixUpperLegs: { default: true } // Enable upper leg rotation fix
       },
 
       init: function () {
@@ -135,11 +136,24 @@
         this.mixer = null;
         this.currentAction = null;
         this.lookAtProxy = null;
+        this.leftUpperLegBone = null;
+        this.rightUpperLegBone = null;
 
         // Listen for VRM model load
         this.onModelLoaded = (e) => {
           this.vrm = e.detail.vrm;
           this.mixer = this.el.components.vrm.mixer;
+
+          // Cache upper leg bone references for fix
+          if (this.vrm.humanoid) {
+            const humanBones = this.vrm.humanoid.humanBones;
+            this.leftUpperLegBone = humanBones.leftUpperLeg?.node;
+            this.rightUpperLegBone = humanBones.rightUpperLeg?.node;
+            console.log('Upper leg bones cached:', {
+              left: !!this.leftUpperLegBone,
+              right: !!this.rightUpperLegBone
+            });
+          }
 
           if (this.data.src) {
             this.loadAnimation(this.data.src);
@@ -232,6 +246,25 @@
 
         } catch (error) {
           console.error('Error loading animation:', error);
+        }
+      },
+
+      tick: function () {
+        // Apply upper leg rotation fix to compensate for CMU mocap coordinate system mismatch
+        if (this.data.fixUpperLegs && this.currentAction && this.currentAction.isRunning()) {
+          // Fix left upper leg - only invert Z axis (CMU data has opposite signs for L/R)
+          if (this.leftUpperLegBone) {
+            const euler = new THREE.Euler().setFromQuaternion(this.leftUpperLegBone.quaternion, 'XYZ');
+            euler.z = -euler.z;  // Invert Z to prevent crossing
+            this.leftUpperLegBone.quaternion.setFromEuler(euler);
+          }
+
+          // Fix right upper leg - leave as-is (no inversion needed)
+          if (this.rightUpperLegBone) {
+            const euler = new THREE.Euler().setFromQuaternion(this.rightUpperLegBone.quaternion, 'XYZ');
+            // No changes - CMU data already has correct sign for right leg
+            this.rightUpperLegBone.quaternion.setFromEuler(euler);
+          }
         }
       },
 

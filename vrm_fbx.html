@@ -3,10 +3,39 @@
 
 <head>
     <title>A-Frame Examples</title>
-    <meta name="description" content="Testing VRM Avatars">
+    <meta name="description" content="Testing VRM Avatars with FBX animations">
     <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo=">
 
     <script src="js/aframe-v1.7.1.js"></script>
+
+    <!-- Polyfills for FBXLoader compatibility -->
+    <script>
+    // Create a Math object that references MathUtils for compatibility
+    if (!THREE.Math) {
+      THREE.Math = THREE.MathUtils;
+    }
+
+    // Add missing THREE.MathUtils methods for FBXLoader compatibility
+    if (THREE.MathUtils && !THREE.MathUtils.degToRad) {
+      THREE.MathUtils.degToRad = function(degrees) {
+        return degrees * THREE.MathUtils.DEG2RAD;
+      };
+    }
+    if (THREE.MathUtils && !THREE.MathUtils.radToDeg) {
+      THREE.MathUtils.radToDeg = function(radians) {
+        return radians * THREE.MathUtils.RAD2DEG;
+      };
+    }
+    if (!THREE.LoaderUtils.extractUrlBase) {
+      THREE.LoaderUtils.extractUrlBase = function(url) {
+        const index = url.lastIndexOf('/');
+        if (index === -1) return './';
+        return url.substr(0, index + 1);
+      };
+    }
+    </script>
+
+    <script src="js/aframe-extras.min.js"></script>
     <script src="js/aframe-environment-component.js"></script>
     <script src="js/controller-listener.js"></script>
     <script src="js/player-move.js"></script>
@@ -19,9 +48,16 @@
     <!-- Custom A-Frame VRM component bundle using official libraries -->
     <script src="js/aframe-vrm-bundle.js"></script>
 
+    <!-- Zlib for compressed FBX files -->
+    <script src="https://cdn.jsdelivr.net/npm/zlibjs@0.3.1/bin/inflate.min.js"></script>
+
+    <!-- FBX animation retargeting component -->
+    <script src="js/aframe-fbx-retarget.js"></script>
+
 </head>
 
 <body>
+<a href="cmu_fbx/CMU_fbx/01_01.fbx">link to fbx</a>
 
 <style>
 #debug-console {
@@ -85,10 +121,40 @@ AFRAME.registerComponent("vrm-test", {
 
     tick: function()
     {
-      
+
     }
 });
 
+// Load raw FBX for comparison
+window.addEventListener('load', () => {
+  const loader = new THREE.FBXLoader();
+  const entity = document.querySelector('#fbx-raw');
+
+  loader.load('cmu_fbx/CMU_fbx/01_01.fbx', (fbx) => {
+    console.log('Raw FBX loaded:', fbx);
+
+    // Scale down to roughly match VRM size (CMU MoCap is in different units)
+    fbx.scale.set(0.01, 0.01, 0.01);
+
+    // Add to scene
+    entity.setObject3D('mesh', fbx);
+
+    // Play the original animation
+    if (fbx.animations && fbx.animations.length > 0) {
+      const mixer = new THREE.AnimationMixer(fbx);
+      const action = mixer.clipAction(fbx.animations[0]);
+      action.play();
+
+      // Update mixer in tick
+      entity.setAttribute('animation-mixer', '');
+      entity.components['animation-mixer'].mixer = mixer;
+
+      console.log('Raw FBX animation playing');
+    }
+  }, undefined, (error) => {
+    console.error('Error loading raw FBX:', error);
+  });
+});
 
 </script>
 
@@ -103,22 +169,21 @@ AFRAME.registerComponent("vrm-test", {
     </a-sky>
 
 
+    <!-- VRM with CONVERTED FBX animation (Blender-processed with correct Euler angles) -->
     <a-entity vrm="src: models/Asian/Asian_F_1_Busi.vrm;"
-              vrm-anim="src: cmu_mocap_bvh/cmu_bvh_01-09/01/01_01.vrma"
-              position="0 0 -1"
+              fbx-animation="src: converted_mocap/01_01_converted.fbx; debug: true"
+              position="-0.6 0 -1.5"
               rotation="0 180 0"
               vrm-test
               shadow="cast: true; receive: false;"
               >
     </a-entity>
 
-      <a-entity vrm="src: https://raw.githack.com/vrm-c/UniVRM/master/Tests/Models/Alicia_vrm-0.51/AliciaSolid_vrm-0.51.vrm;"
-              vrm-anim="src: VRMA/Clapping.vrma"
-              position="1 0 -1"
+    <!-- Raw FBX with native animation on the right for comparison -->
+    <a-entity id="fbx-raw"
+              position="0.6 0 -1.5"
               rotation="0 180 0"
-            
-              shadow="cast: true; receive: false;"
-              >
+              shadow="cast: true; receive: false;">
     </a-entity>
 
     <a-entity
