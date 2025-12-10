@@ -27,11 +27,7 @@ package-lock.json
 *.sublime-workspace
 
 # Motion capture data and conversions
-cmu_fbx/
-cmu_mocap_bvh/
-converted_mocap/
-*.fbx
-*.bvh
+
 
 # Media files
 *.mov
