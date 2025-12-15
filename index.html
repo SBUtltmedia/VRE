@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VRMA Animations Index</title>
+    <style>
+        body { font-family: sans-serif; background: #111; color: #eee; padding: 20px; }
+        a { color: #0cf; text-decoration: none; display: block; padding: 5px; border-bottom: 1px solid #222; }
+        a:hover { background: #222; }
+        h1 { border-bottom: 1px solid #333; padding-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Available Animations</h1>
+    <div id="list">Loading...</div>
+
+    <script>
+        fetch('animations.json')
+            .then(response => response.json())
+            .then(data => {
+                const list = document.getElementById('list');
+                list.innerHTML = '';
+                
+                // Sort naturally
+                data.sort(new Intl.Collator('en', {numeric: true, sensitivity: 'base'}).compare);
+
+                data.forEach(path => {
+                    const a = document.createElement('a');
+                    a.href = `animate.html#${path}`;
+                    a.textContent = path;
+                    a.target = "_blank"; // Optional: open in new tab? user didn't specify, but safer to keep in same tab normally. I'll remove target to keep flow simple.
+                    a.removeAttribute('target');
+                    list.appendChild(a);
+                });
+            })
+            .catch(err => {
+                document.getElementById('list').textContent = 'Error loading list.';
+                console.error(err);
+            });
+    </script>
+</body>
+</html>

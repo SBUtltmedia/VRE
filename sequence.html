@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VRMA Animation Sequence Player</title>
+    <meta name="description" content="Plays a sequence of VRMA animations with buffering and blending">
+    <script src="js/aframe-v1.7.1.js"></script>
+    <script src="js/aframe-environment-component.js"></script>
+    <script src="js/three-vrm.js"></script>
+    <script src="js/three-vrm-animation.js"></script>
+    <script src="js/aframe-vrm-bundle.js"></script>
+</head>
+<body>
+
+<style>
+    #info {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        color: lime;
+        font-family: monospace;
+        background: rgba(0,0,0,0.7);
+        padding: 10px;
+        pointer-events: none;
+    }
+</style>
+
+<div id="info">
+    <div>Sequence Player</div>
+    <div id="status">Initializing...</div>
+    <div id="current-file"></div>
+</div>
+
+<script>
+    AFRAME.registerComponent('vrm-anim-sequence', {
+        schema: {
+            src: { type: 'string', default: 'animations.json' },
+            vrm: { type: 'string', default: 'models/avatar.vrm' },
+            blendWindow: { type: 'number', default: 1.0 }, // Seconds before end to start blending
+            legSpread: { type: 'number', default: -0.5 }
+        },
+
+        init: function () {
+            this.playlist = [];
+            this.currentIndex = 0;
+            this.clipCache = new Map(); // url -> clip
+            this.vrm = null;
+            this.mixer = null;
+            this.currentAction = null;
+            this.nextAction = null; // For crossfading
+            this.isLoading = false;
+            
+            // Leg fix variables
+            this.leftUpperLeg = null;
+            this.rightUpperLeg = null;
+            this.zAxis = new THREE.Vector3(0, 0, 1);
+            this.leftOffset = new THREE.Quaternion();
+            this.rightOffset = new THREE.Quaternion();
+
+            // Bindings
+            this.onModelLoaded = this.onModelLoaded.bind(this);
+
+            // Load playlist
+            this.loadPlaylist();
+
+            // Listen for VRM
+            this.el.addEventListener('model-loaded', this.onModelLoaded);
+            
+            // Set VRM src
+            this.el.setAttribute('vrm', 'src', this.data.vrm);
+        },
+
+        loadPlaylist: async function() {
+            try {
+                const response = await fetch(this.data.src);
+                this.playlist = await response.json();
+                // Sort naturally just in case
+                this.playlist.sort(new Intl.Collator('en', {numeric: true, sensitivity: 'base'}).compare);
+                console.log(`Loaded playlist with ${this.playlist.length} animations.`);
+                this.updateStatus(`Playlist loaded: ${this.playlist.length} items`);
+                
+                // If VRM is already ready, start buffering/playing
+                if (this.vrm && this.playlist.length > 0) {
+                    this.startSequence();
+                }
+            } catch (e) {
+                console.error("Failed to load playlist:", e);
+                this.updateStatus("Error loading playlist");
+            }
+        },
+
+        onModelLoaded: function (evt) {
+            const vrm = evt.detail.vrm;
+            if (!vrm) return;
+            
+            this.vrm = vrm;
+            console.log("VRM loaded");
+            
+            // Setup Mixer
+            if (this.el.components.vrm && this.el.components.vrm.mixer) {
+                this.mixer = this.el.components.vrm.mixer;
+            } else {
+                this.mixer = new THREE.AnimationMixer(this.vrm.scene);
+            }
+
+            // Setup Leg Fix
+            if (this.vrm.humanoid) {
+                this.leftUpperLeg = this.vrm.humanoid.getBoneNode('leftUpperLeg');
+                this.rightUpperLeg = this.vrm.humanoid.getBoneNode('rightUpperLeg');
+            }
+
+            if (this.playlist.length > 0) {
+                this.startSequence();
+            }
+        },
+
+        getClip: async function(url) {
+            if (this.clipCache.has(url)) {
+                return this.clipCache.get(url);
+            }
+
+            // Load
+            return new Promise((resolve, reject) => {
+                const loader = new THREE.GLTFLoader();
+                loader.register((parser) => {
+                    const plugin = new THREE.VRMAnimationLoaderPlugin(parser);
+                    const originalAfterRoot = plugin.afterRoot.bind(plugin);
+                    plugin.afterRoot = async function (gltf) {
+                        if (gltf.parser.json.extensions && gltf.parser.json.extensions.VRMC_vrm_animation) {
+                            const vrmcAnim = gltf.parser.json.extensions.VRMC_vrm_animation;
+                            if (!vrmcAnim.specVersion) vrmcAnim.specVersion = '1.0';
+                        }
+                        return originalAfterRoot(gltf);
+                    };
+                    return plugin;
+                });
+
+                loader.load(url, (gltf) => {
+                    const vrmAnimations = gltf.userData.vrmAnimations;
+                    if (vrmAnimations && vrmAnimations.length > 0) {
+                        const clip = THREE.createVRMAnimationClip(vrmAnimations[0], this.vrm);
+                        this.clipCache.set(url, clip);
+                        resolve(clip);
+                    } else {
+                        resolve(null); // No animation found
+                    }
+                }, undefined, (err) => {
+                    console.error("Error loading " + url, err);
+                    resolve(null); // Resolve null on error to keep sequence moving
+                });
+            });
+        },
+
+        startSequence: async function() {
+            if (this.isLoading) return;
+            this.isLoading = true;
+
+            // Load first animation
+            const url = this.playlist[this.currentIndex];
+            this.updateStatus("Loading first animation...");
+            
+            const clip = await this.getClip(url);
+            
+            if (clip) {
+                this.playClip(clip, url);
+                // Buffer next
+                this.bufferNext();
+            } else {
+                // Skip if failed
+                this.currentIndex++;
+                this.isLoading = false;
+                this.startSequence();
+            }
+        },
+
+        bufferNext: function() {
+            const nextIdx = (this.currentIndex + 1) % this.playlist.length;
+            const nextUrl = this.playlist[nextIdx];
+            if (!this.clipCache.has(nextUrl)) {
+                console.log("Buffering:", nextUrl);
+                this.getClip(nextUrl).then(() => console.log("Buffered:", nextUrl));
+            }
+            
+            // Clean up old cache (optional, keep last 5?)
+            // For now simple infinite cache or manual cleanup if memory issues.
+            // Let's keep it simple.
+        },
+
+        playClip: function(clip, url) {
+            this.isLoading = false; // Done loading current
+            
+            // Setup action
+            const action = this.mixer.clipAction(clip);
+            action.loop = THREE.LoopOnce;
+            action.clampWhenFinished = true;
+            action.reset();
+            action.play();
+
+            if (this.currentAction) {
+                // Crossfade
+                // Synchronize? No, just fade.
+                action.crossFadeFrom(this.currentAction, this.data.blendWindow, true);
+            }
+
+            this.currentAction = action;
+            this.currentUrl = url;
+            this.updateStatus("Playing");
+            document.getElementById('current-file').textContent = url;
+            
+            // We need to track when to transition
+            this.transitionScheduled = false;
+        },
+
+        updateStatus: function(msg) {
+            document.getElementById('status').textContent = msg;
+        },
+
+        tick: function(t, dt) {
+            // Apply Leg Fix
+            if (this.leftUpperLeg && this.rightUpperLeg && this.data.legSpread !== 0) {
+                const spreadAngle = this.data.legSpread * Math.PI / 4; 
+                this.leftOffset.setFromAxisAngle(this.zAxis, spreadAngle);
+                this.rightOffset.setFromAxisAngle(this.zAxis, -spreadAngle);
+                this.leftUpperLeg.quaternion.premultiply(this.leftOffset);
+                this.rightUpperLeg.quaternion.premultiply(this.rightOffset);
+            }
+
+            // Check animation progress
+            if (this.currentAction && !this.transitionScheduled && !this.isLoading) {
+                const clip = this.currentAction.getClip();
+                const duration = clip.duration;
+                const time = this.currentAction.time;
+
+                // Time to transition?
+                if (duration - time <= this.data.blendWindow) {
+                    this.transitionScheduled = true;
+                    this.playNext();
+                }
+            }
+        },
+
+        playNext: async function() {
+            this.currentIndex = (this.currentIndex + 1) % this.playlist.length;
+            const url = this.playlist[this.currentIndex];
+            
+            // Try to get from cache immediately
+            let clip = this.clipCache.get(url);
+            
+            if (!clip) {
+                // Not buffered yet? Load now.
+                console.warn("Animation not buffered, loading now:", url);
+                this.updateStatus("Loading next (buffering lag)...");
+                clip = await this.getClip(url);
+            }
+
+            if (clip) {
+                this.playClip(clip, url);
+                this.bufferNext();
+            } else {
+                // Failed to load, skip
+                console.error("Skipping " + url);
+                this.playNext(); // Recurse
+            }
+        }
+    });
+</script>
+
+<a-scene>
+    <a-sky color="#111"></a-sky>
+    
+    <a-plane position="0 0 0" rotation="-90 0 0" width="50" height="50" color="#222" shadow="receive: true"></a-plane>
+    <a-entity light="type: ambient; intensity: 0.5;"></a-entity>
+    <a-entity light="type: directional; intensity: 0.8; castShadow: true;" position="2 4 2"></a-entity>
+    <a-entity position="0 1.6 3">
+        <a-camera></a-camera>
+    </a-entity>
+
+    <!-- The sequence player -->
+    <a-entity 
+        id="avatar"
+        vrm-anim-sequence="vrm: models/avatar.vrm; src: animations.json; legSpread: -0.5; blendWindow: 1.0"
+        position="0 0 -4" 
+        rotation="0 180 0"
+        shadow="cast: true">
+    </a-entity>
+
+</a-scene>
+
+</body>
+</html>

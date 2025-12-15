@@ -320,7 +320,7 @@ AFRAME.registerComponent('jump-to', {
 
       // Load both
       this.idleClip = await loadClip('../VRMA/LookAround.vrma', 'Idle');
-      this.jumpClip = await loadClip('../VRMA/Jump.vrma', 'Jump');
+      this.jumpClip = await loadClip('../VRMA/cmu_mocap_vrma/001/01_01.vrma', 'Jump');
 
       if (this.idleClip) {
           this.idleAction = this.mixer.clipAction(this.idleClip);
