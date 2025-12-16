@@ -23,12 +23,10 @@
                 // Sort naturally
                 data.sort(new Intl.Collator('en', {numeric: true, sensitivity: 'base'}).compare);
 
-                data.forEach(path => {
+                data.forEach(item => {
                     const a = document.createElement('a');
-                    a.href = `animate.html#${path}`;
-                    a.textContent = path;
-                    a.target = "_blank"; // Optional: open in new tab? user didn't specify, but safer to keep in same tab normally. I'll remove target to keep flow simple.
-                    a.removeAttribute('target');
+                    a.href = `animate.html#${item.path}`;
+                    a.textContent = `${item.path} - ${item.description}`;
                     list.appendChild(a);
                 });
             })

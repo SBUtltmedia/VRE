@@ -28,6 +28,7 @@
     <div>Sequence Player</div>
     <div id="status">Initializing...</div>
     <div id="current-file"></div>
+    <div id="current-description"></div>
 </div>
 
 <script>
@@ -74,7 +75,7 @@
                 const response = await fetch(this.data.src);
                 this.playlist = await response.json();
                 // Sort naturally just in case
-                this.playlist.sort(new Intl.Collator('en', {numeric: true, sensitivity: 'base'}).compare);
+                this.playlist.sort((a, b) => new Intl.Collator('en', {numeric: true, sensitivity: 'base'}).compare(a.url, b.url));
                 console.log(`Loaded playlist with ${this.playlist.length} animations.`);
                 this.updateStatus(`Playlist loaded: ${this.playlist.length} items`);
                 
@@ -155,13 +156,13 @@
             this.isLoading = true;
 
             // Load first animation
-            const url = this.playlist[this.currentIndex];
+            const animation = this.playlist[this.currentIndex];
             this.updateStatus("Loading first animation...");
             
-            const clip = await this.getClip(url);
+            const clip = await this.getClip(animation.url);
             
             if (clip) {
-                this.playClip(clip, url);
+                this.playClip(clip, animation);
                 // Buffer next
                 this.bufferNext();
             } else {
@@ -174,7 +175,7 @@
 
         bufferNext: function() {
             const nextIdx = (this.currentIndex + 1) % this.playlist.length;
-            const nextUrl = this.playlist[nextIdx];
+            const nextUrl = this.playlist[nextIdx].url;
             if (!this.clipCache.has(nextUrl)) {
                 console.log("Buffering:", nextUrl);
                 this.getClip(nextUrl).then(() => console.log("Buffered:", nextUrl));
@@ -185,7 +186,7 @@
             // Let's keep it simple.
         },
 
-        playClip: function(clip, url) {
+        playClip: function(clip, animation) {
             this.isLoading = false; // Done loading current
             
             // Setup action
@@ -202,9 +203,10 @@
             }
 
             this.currentAction = action;
-            this.currentUrl = url;
+            this.currentUrl = animation.url;
             this.updateStatus("Playing");
-            document.getElementById('current-file').textContent = url;
+            document.getElementById('current-file').textContent = animation.url;
+            document.getElementById('current-description').textContent = animation.description;
             
             // We need to track when to transition
             this.transitionScheduled = false;
@@ -240,24 +242,24 @@
 
         playNext: async function() {
             this.currentIndex = (this.currentIndex + 1) % this.playlist.length;
-            const url = this.playlist[this.currentIndex];
+            const animation = this.playlist[this.currentIndex];
             
             // Try to get from cache immediately
-            let clip = this.clipCache.get(url);
+            let clip = this.clipCache.get(animation.url);
             
             if (!clip) {
                 // Not buffered yet? Load now.
-                console.warn("Animation not buffered, loading now:", url);
+                console.warn("Animation not buffered, loading now:", animation.url);
                 this.updateStatus("Loading next (buffering lag)...");
-                clip = await this.getClip(url);
+                clip = await this.getClip(animation.url);
             }
 
             if (clip) {
-                this.playClip(clip, url);
+                this.playClip(clip, animation);
                 this.bufferNext();
             } else {
                 // Failed to load, skip
-                console.error("Skipping " + url);
+                console.error("Skipping " + animation.url);
                 this.playNext(); // Recurse
             }
         }
