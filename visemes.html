@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VRM Viseme Tester</title>
+    <meta name="description" content="Tests facial visemes on cleaned VRM models">
+    <script src="js/aframe-v1.7.1.js"></script>
+    <script src="js/aframe-environment-component.js"></script>
+    <script src="js/three-vrm.js"></script>
+    <script src="js/three-vrm-animation.js"></script>
+    <script src="js/aframe-vrm-bundle.js"></script>
+</head>
+<body>
+
+<style>
+    #info {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        color: white;
+        font-family: monospace;
+        background: rgba(0,0,0,0.8);
+        padding: 15px;
+        border-radius: 5px;
+        pointer-events: none;
+        font-size: 1.2em;
+        z-index: 100;
+    }
+    .highlight {
+        color: #00ff00;
+        font-weight: bold;
+    }
+</style>
+
+<div id="info">
+    <div>Viseme Tester</div>
+    <div id="status">Loading model...</div>
+    <div id="current-viseme" class="highlight"></div>
+</div>
+
+<script>
+    AFRAME.registerComponent('viseme-tester', {
+        schema: {
+            vrm: { type: 'string', default: 'models/AIAN/AIAN_F_1_Casual_CLEANED.vrm' },
+            duration: { type: 'number', default: 1.5 } // Seconds per viseme
+        },
+
+        init: function () {
+            this.visemes = ["A", "I", "U", "E", "O", "F", "M", "S", "CH", "K", "N"];
+            this.currentIndex = 0;
+            this.time = 0;
+
+            this.vrm = null;
+            this.mesh = null;
+            this.mixer = null;
+            this.currentAction = null;
+
+            // Bindings
+            this.onModelLoaded = this.onModelLoaded.bind(this);
+            this.el.addEventListener('model-loaded', this.onModelLoaded);
+
+            // Set VRM src
+            this.el.setAttribute('vrm', 'src', this.data.vrm);
+        },
+
+        onModelLoaded: function (evt) {
+            const vrm = evt.detail.vrm;
+            if (!vrm) return;
+
+            this.vrm = vrm;
+            console.log("VRM loaded");
+            document.getElementById('status').textContent = "Model Loaded. Playing Sequence.";
+
+            // Find the specific face mesh where we added the keys
+            this.mesh = this.findFaceMesh(this.vrm.scene);
+            if (this.mesh) {
+                console.log("Face mesh found:", this.mesh.name);
+            } else {
+                console.warn("Could not find 'H_DDS_HighRes' mesh. Visemes might not work if keys are missing.");
+                document.getElementById('status').textContent = "Warning: Face mesh not found.";
+            }
+
+            // Setup animation mixer for skeletal animations (optional)
+            // Uncomment this section to load animations
+            /*
+            const loader = new THREE.GLTFLoader();
+            loader.load('path/to/animation.vrma', (gltf) => {
+                if (gltf.animations && gltf.animations.length > 0) {
+                    this.mixer = new THREE.AnimationMixer(this.vrm.scene);
+                    this.currentAction = this.mixer.clipAction(gltf.animations[0]);
+                    this.currentAction.play();
+                    console.log("Animation loaded and playing");
+                }
+            });
+            */
+        },
+        
+        findFaceMesh: function(root) {
+            let found = null;
+            root.traverse((node) => {
+                if (node.isMesh && node.name === 'H_DDS_HighRes') {
+                    found = node;
+                }
+            });
+            return found;
+        },
+
+        tick: function(t, dt) {
+            if (!this.vrm) return;
+
+            const deltaS = dt / 1000;
+            this.time += deltaS;
+
+            // Update skeletal animation mixer (if loaded)
+            if (this.mixer) {
+                this.mixer.update(deltaS);
+            }
+
+            // Cycle through visemes
+            if (this.time > this.data.duration) {
+                this.time = 0;
+                // Ensure the previous one is fully closed before moving on
+                this.applyViseme(this.visemes[this.currentIndex], 0);
+                this.currentIndex = (this.currentIndex + 1) % this.visemes.length;
+            }
+
+            const currentViseme = this.visemes[this.currentIndex];
+
+            // Calculate intensity: Sine wave 0 -> 1 -> 0
+            // math: sin(PI * progress)
+            const progress = this.time / this.data.duration;
+            const value = Math.max(0, Math.sin(Math.PI * progress));
+
+            this.applyViseme(currentViseme, value);
+
+            // Update UI
+            const elInfo = document.getElementById('current-viseme');
+            if (elInfo) elInfo.textContent = `${currentViseme} : ${value.toFixed(2)}`;
+        },
+        
+        applyViseme: function(name, value) {
+            // Direct mesh access for all visemes (most reliable method)
+            // Works for both vowels (A, I, U, E, O) and consonants (F, M, S, CH, K, N)
+            if (this.mesh && this.mesh.morphTargetDictionary && this.mesh.morphTargetInfluences) {
+                if (name in this.mesh.morphTargetDictionary) {
+                    const idx = this.mesh.morphTargetDictionary[name];
+                    this.mesh.morphTargetInfluences[idx] = value;
+                }
+            }
+        }
+    });
+</script>
+
+<a-scene>
+    <a-sky color="#1a1a1a"></a-sky>
+    
+    <!-- Lighting -->
+    <a-entity light="type: ambient; intensity: 0.6;"></a-entity>
+    <a-entity light="type: directional; intensity: 1.0; castShadow: true;" position="1 2 3"></a-entity>
+    <a-entity light="type: point; intensity: 0.5; color: #ffd;" position="-1 1.5 1"></a-entity>
+
+    <!-- Camera: Close up on face -->
+    <!-- Avatar head is usually ~1.5m - 1.6m high -->
+    <!-- Placing rig at 0, camera handles user height (default ~1.6) -->
+    <a-entity position="0 0 0.6">
+        <a-camera fov="50" wasd-controls-enabled="true" look-controls-enabled="true"></a-camera>
+        <!-- Headlight for face visibility -->
+        <a-entity light="type: point; intensity: 0.8; distance: 3; decay: 2" position="0 1.6 0"></a-entity>
+    </a-entity>
+
+    <!-- Avatar with Viseme Tester Component -->
+    <a-entity 
+        id="avatar"
+        viseme-tester="vrm: models/AIAN/AIAN_F_1_Casual_CLEANED.vrm; duration: 1.5"
+        position="0 0 0" 
+        rotation="0 180 0"
+        shadow="cast: true">
+    </a-entity>
+
+</a-scene>
+
+</body>
+</html>
