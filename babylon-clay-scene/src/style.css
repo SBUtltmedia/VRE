@@ -1,1 +1,16 @@
-@import 'tailwindcss'; 
+@import 'tailwindcss';
+
+/* Hide cursor when pointer is locked */
+canvas::-webkit-full-screen {
+  width: 100%;
+  height: 100%;
+}
+
+canvas {
+  cursor: auto;
+}
+
+/* When pointer is locked, hide cursor automatically via browser */
+body.pointer-locked canvas {
+  cursor: none;
+} 
