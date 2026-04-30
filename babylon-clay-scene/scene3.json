@@ -1,5 +1,5 @@
 {
-    "avatar": "../models/AIAN/AIAN_F_1_Busi.vrm",
+    "avatar": "../models/Black/Black_F_1_Busi.vrm",
     "idle": {
         "blinkIntervalMin": 2.0,
         "blinkIntervalMax": 5.0,
@@ -9,14 +9,8 @@
     },
     "clips": [
         {
-            "id": "wait_1",
-            "animation": null,
-            "audio": null,
-            "delayAfter": 23
-        },
-        {
             "id": "recite_1",
-            "animation": "animations/altaforte_a2e_frames.json",
+            "animation": "animations/altaforte_frames.json",
             "audio": "audio/altaforte.wav",
             "delayAfter": 0
         }

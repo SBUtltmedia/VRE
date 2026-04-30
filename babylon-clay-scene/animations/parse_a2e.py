@@ -20,10 +20,10 @@ LAM_A2E_SHAPES = [
 ]
 
 def arkit_to_model_name(name: str) -> str:
-    """Convert ARKit _L/_R convention to your model's CapitalizedLeft/Right format."""
+    """Convert ARKit _L/_R convention to your model's camelLeft/Right format."""
     name = re.sub(r'_L$', 'Left', name)
     name = re.sub(r'_R$', 'Right', name)
-    return name[0].upper() + name[1:]  # capitalize first letter only
+    return name 
 
 # Pre-build the target shape name list
 MODEL_SHAPES = [arkit_to_model_name(s) for s in LAM_A2E_SHAPES]

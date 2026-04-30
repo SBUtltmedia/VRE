@@ -103,7 +103,7 @@ export class App {
 		// Load A2FAvatar from scene.json manifest
 		// Can add more avatars here
 		const avatar = new A2FAvatar(this.scene);
-		await avatar.loadManifest('../scene.json');
+		await avatar.loadManifest('../scene3.json');
 
 		const secondCharacter = new A2FAvatar(this.scene);
 		await secondCharacter.loadManifest('../scene2.json');
