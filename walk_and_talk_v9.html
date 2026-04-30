@@ -4,8 +4,8 @@
   <meta charset="utf-8"/>
   <title>VRM Walk &amp; Talk v9 — Babylon.js</title>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <script src="https://preview.babylonjs.com/babylon.js"></script>
-  <script src="https://preview.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
+  <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.js"></script>
   <style>
     html, body, #renderCanvas { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #001a33; }
     #ui {
@@ -48,6 +48,7 @@
     const A2F_JSON  = 'audio/a2f_lam_sample.json'; // LAM format with head_pose; user can override via file picker
 
     // ── VRM loader ─────────────────────────────────────────────────────────────
+    window.LOADERS = BABYLON;
     await new Promise((res, rej) => {
       const s = document.createElement('script');
       s.src = 'https://xuhuisheng.github.io/babylonjs-vrm/babylon-vrm-loader.js';

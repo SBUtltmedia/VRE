@@ -1,0 +1,309 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>The Traffic Stop</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
+  <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+  <style>
+    html, body, #renderCanvas { width:100%; height:100%; margin:0; padding:0; overflow:hidden; background:#0a0a12; }
+    #ui {
+      position:absolute; bottom:0; left:0; right:0;
+      padding:20px 32px 28px;
+      background:linear-gradient(transparent, rgba(0,0,0,.75));
+      font-family:Georgia, serif; color:#fff; pointer-events:none;
+    }
+    #speaker { font-size:13px; letter-spacing:.12em; text-transform:uppercase; opacity:.6; margin-bottom:6px; }
+    #line    { font-size:17px; line-height:1.5; max-width:640px; margin:0 auto; text-align:center;
+               text-shadow:0 1px 6px rgba(0,0,0,.8); min-height:1.5em; }
+    #prog-bg { height:2px; background:rgba(255,255,255,.15); border-radius:1px; margin-top:14px; }
+    #prog-bar{ height:100%; background:rgba(180,200,255,.7); border-radius:1px; width:0%; transition:width .1s linear; }
+    #loading { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+               font:14px monospace; color:rgba(255,255,255,.5); background:#0a0a12; }
+  </style>
+</head>
+<body>
+  <canvas id="renderCanvas"></canvas>
+  <div id="ui">
+    <div id="speaker"></div>
+    <div id="line">Loading…</div>
+    <div id="prog-bg"><div id="prog-bar"></div></div>
+  </div>
+  <div id="loading">Loading scene…</div>
+
+  <script type="module">
+    BABYLON.TransformNode.prototype.getTotalVertices ??= () => 0;
+
+    // ── Rhubarb phoneme → VRM "aa" expression weight ──────────────────────────
+    const PHON_W = { X:0, B:0, F:.25, H:.35, E:.45, C:.5, D:.65, G:.7, A:.85 };
+
+    const speakerEl = document.getElementById('speaker');
+    const lineEl    = document.getElementById('line');
+    const progEl    = document.getElementById('prog-bar');
+    const loadEl    = document.getElementById('loading');
+
+    // ── Load resources in parallel ─────────────────────────────────────────────
+    const [, sceneData] = await Promise.all([
+      new Promise((res, rej) => {
+        window.LOADERS = BABYLON;
+        const s = document.createElement('script');
+        s.src = 'https://xuhuisheng.github.io/babylonjs-vrm/babylon-vrm-loader.js';
+        s.onload = () => {
+          // vrm1-loader.js extends VRM 0.x loader with VRM 1.0 humanoid bone support
+          const s2 = document.createElement('script');
+          s2.src = 'vrm1-loader.js';
+          s2.onload = res;
+          s2.onerror = () => { console.warn('[scene] vrm1-loader missing, VRM 1.0 bones may be incomplete'); res(); };
+          document.head.appendChild(s2);
+        };
+        s.onerror = rej;
+        document.head.appendChild(s);
+      }),
+      fetch('traffic_scene.json').then(r => r.json()),
+    ]);
+
+    // ── Babylon scene ──────────────────────────────────────────────────────────
+    const canvas = document.getElementById('renderCanvas');
+    const engine = new BABYLON.Engine(canvas, true);
+    const scene  = new BABYLON.Scene(engine);
+
+    // Night-street feel
+    scene.ambientColor = new BABYLON.Color3(.05, .05, .1);
+    scene.clearColor   = new BABYLON.Color4(.04, .04, .08, 1);
+
+    // Key light: headlight / streetlamp from above-front
+    const key = new BABYLON.DirectionalLight('key', new BABYLON.Vector3(.3, -1, .5), scene);
+    key.intensity = 1.2;
+    key.diffuse   = new BABYLON.Color3(1, .95, .85);
+    // Fill from opposite side, cold
+    const fill = new BABYLON.HemisphericLight('fill', new BABYLON.Vector3(0, 1, 0), scene);
+    fill.intensity = .35;
+    fill.diffuse   = new BABYLON.Color3(.6, .7, 1);
+    fill.groundColor = new BABYLON.Color3(.05, .04, .08);
+
+    // Camera: sees both characters side by side, slight high angle
+    // VRM 1.0 faces -Z in Babylon; camera at negative Z looks at them front-on.
+    const camera = new BABYLON.ArcRotateCamera('cam',
+      Math.PI / 2,          // alpha — front view
+      Math.PI / 2 - 0.22,   // beta  — slightly above horizon
+      4.2,                  // radius
+      new BABYLON.Vector3(0, 1.05, 0), scene);
+    camera.attachControl(canvas, true);
+    camera.lowerRadiusLimit = 1; camera.upperRadiusLimit = 12;
+
+    // ── Actor loader ───────────────────────────────────────────────────────────
+    const actors = {};
+
+    async function loadActor(id, vrmPath, startPos) {
+      loadEl.textContent = `Loading ${id}…`;
+      const preMgrCount = scene.metadata?.vrmManagers?.length ?? 0;
+      const preRootIds  = new Set(scene.rootNodes.map(n => n.uniqueId));
+
+      await BABYLON.ImportMeshAsync(vrmPath, scene);
+
+      // Grab the VRM manager added by this load
+      const mgr = scene.metadata?.vrmManagers?.[preMgrCount];
+      if (!mgr) { console.error('[scene] No VRM manager for', id); return; }
+
+      // Find the __root__ node introduced by this load
+      const root = scene.rootNodes.find(n => !preRootIds.has(n.uniqueId));
+      if (!root) { console.error('[scene] No root node for', id); return; }
+
+      // Position: use startPosition from JSON
+      root.position.set(startPos?.x ?? 0, startPos?.y ?? 0, startPos?.z ?? 0);
+
+      // Find morph-target "aa" expression for lip sync (fallback)
+      const aaMT = findMorphTarget(root, ['aa', 'Fcl_MTH_A', 'mouthOpen', 'A_']);
+
+      // Initialize AnimatorAvatar for this actor
+      const vrmAvatar = new BABYLON.AnimatorAvatar(`avatar-${id}`, root);
+
+      actors[id] = { id, mgr, root, aaMT, vrmAvatar, curGroups: [] };
+      console.log(`[scene] ${id} loaded — hips:`, mgr.humanoidBone?.hips?.name, '  aa MT:', aaMT?.name ?? 'none');
+    }
+
+    function findMorphTarget(root, candidates) {
+      for (const mesh of root.getChildMeshes(false)) {
+        const mtm = mesh.morphTargetManager;
+        if (!mtm) continue;
+        for (let i = 0; i < mtm.numTargets; i++) {
+          const mt = mtm.getTarget(i);
+          if (candidates.some(c => mt.name?.toLowerCase().includes(c.toLowerCase()))) return mt;
+        }
+      }
+      return null;
+    }
+
+    // ── VRMA retarget & play ────────────────────────────────────────────────────
+    // Uses AnimatorAvatar to retarget a VRMA animation group.
+    async function loadAndRetargetVRMA(actor, url, name) {
+      const managersBefore = (scene.metadata?.vrmAnimationManagers ?? []).length;
+      let container;
+      try { container = await BABYLON.LoadAssetContainerAsync(url, scene); }
+      catch (e) { console.warn('[scene] VRMA load failed:', url, e); return null; }
+
+      const vrmAnimMgr = (scene.metadata?.vrmAnimationManagers ?? [])[managersBefore];
+      const srcGroup = container.animationGroups[0];
+
+      if (!vrmAnimMgr?.animationMap || !srcGroup) {
+        container.dispose();
+        return null;
+      }
+
+      // Build source -> target name map
+      const mapNodeNames = new Map();
+      srcGroup.targetedAnimations.forEach((ta, i) => {
+        const boneName = vrmAnimMgr.animationMap.get(i);
+        const bone = actor.mgr.humanoidBone[boneName];
+        if (bone && ta.target?.name) {
+          mapNodeNames.set(ta.target.name, bone.name);
+        }
+      });
+
+      const remapped = actor.vrmAvatar.retargetAnimationGroup(srcGroup, {
+        animationGroupName: `${actor.id}-${name}`,
+        fixRootPosition: true,
+        rootNodeName: actor.mgr.humanoidBone['hips']?.name,
+        groundReferenceNodeName: actor.mgr.humanoidBone['leftFoot']?.name,
+        mapNodeNames,
+      });
+
+      // We don't need the container anymore, remapped group is in the scene
+      container.dispose();
+      return remapped;
+    }
+
+    function stopActor(actor) {
+      actor.curGroups.forEach(g => { g.stop(); g.dispose(); });
+      actor.curGroups = [];
+    }
+
+    // ── Lip sync ───────────────────────────────────────────────────────────────
+    let _lipTimers = [];
+    function clearLipSync() { _lipTimers.forEach(clearTimeout); _lipTimers = []; }
+
+    function scheduleLipSync(actor, cues) {
+      clearLipSync();
+      if (!actor.aaMT || !cues?.length) return;
+      for (const cue of cues) {
+        const w = PHON_W[cue.value] ?? 0;
+        _lipTimers.push(setTimeout(() => { actor.aaMT.influence = w; }, cue.start * 1000));
+      }
+      const endT = (cues.at(-1)?.end ?? 0) * 1000 + 100;
+      _lipTimers.push(setTimeout(() => { actor.aaMT.influence = 0; }, endT));
+    }
+
+    // ── Timeline event player ──────────────────────────────────────────────────
+    async function playEvent(event, idx, total) {
+      const actor = actors[event.actor];
+      if (!actor) { console.warn('[scene] Unknown actor:', event.actor); return 0; }
+
+      speakerEl.textContent = event.actor.toUpperCase();
+      lineEl.textContent    = event.description ?? '';
+
+      // Stop previous animations
+      stopActor(actor);
+
+      // Slight camera pan
+      const targetX = actor.root.position.x * 0.4;
+      camera.target = BABYLON.Vector3.Lerp(camera.target, new BABYLON.Vector3(targetX, 1.05, 0), 0.6);
+
+      // Load Layers (ROOT, BODY, FACE)
+      const layers = event.layers || {};
+      if (event.clip && !layers.BODY) layers.BODY = event.clip;
+
+      const groupPromises = [];
+      for (const [name, url] of Object.entries(layers)) {
+        groupPromises.push(loadAndRetargetVRMA(actor, url, name));
+      }
+
+      const groups = (await Promise.all(groupPromises)).filter(Boolean);
+      actor.curGroups = groups;
+
+      // Start all layers in sync
+      groups.forEach(g => g.start(false, 1.0, g.from, g.to, false));
+
+      // Audio + lip sync fallback
+      const dur = event.duration ?? 4;
+      if (event.audio) {
+        const audio = new Audio(event.audio);
+        audio.volume = 1.0;
+
+        // Only use Rhubarb fallback if FACE layer is missing
+        if (event.lipSync && !layers.FACE) {
+          fetch(event.lipSync).then(r => r.json()).then(ls => {
+            scheduleLipSync(actor, ls.mouthCues);
+          }).catch(() => {});
+        }
+
+        let progObs = scene.onBeforeRenderObservable.add(() => {
+          const t = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
+          progEl.style.width = (t * 100).toFixed(1) + '%';
+        });
+
+        await new Promise(resolve => {
+          audio.onended = () => { scene.onBeforeRenderObservable.remove(progObs); progEl.style.width = '100%'; resolve(); };
+          audio.onerror = () => { scene.onBeforeRenderObservable.remove(progObs); resolve(); };
+          audio.play().catch(resolve);
+        });
+      } else {
+        const start = performance.now();
+        await new Promise(resolve => {
+          let obs = scene.onBeforeRenderObservable.add(() => {
+            const t = Math.min((performance.now() - start) / (dur * 1000), 1);
+            progEl.style.width = (t * 100).toFixed(1) + '%';
+            if (t >= 1) { scene.onBeforeRenderObservable.remove(obs); resolve(); }
+          });
+        });
+      }
+
+      clearLipSync();
+      if (actor.aaMT) actor.aaMT.influence = 0;
+      stopActor(actor);
+      progEl.style.width = '0%';
+    }
+
+    // ── Main orchestrator ──────────────────────────────────────────────────────
+    async function runScene() {
+      const timeline = sceneData.timeline ?? [];
+      const GAP_MS = 400;
+
+      for (let i = 0; i < timeline.length; i++) {
+        await playEvent(timeline[i], i, timeline.length);
+        await new Promise(r => setTimeout(r, GAP_MS));
+      }
+
+      speakerEl.textContent = '';
+      lineEl.textContent    = '— end —';
+      progEl.style.width    = '0%';
+    }
+
+    // ── Load both actors ───────────────────────────────────────────────────────
+    for (const actorDef of (sceneData.actors ?? [])) {
+      await loadActor(actorDef.id, actorDef.vrm, actorDef.startPosition);
+    }
+
+    loadEl.style.display = 'none';
+    lineEl.textContent   = 'Click to begin';
+    speakerEl.textContent = '';
+
+    // Wait for first user gesture (autoplay policy)
+    await new Promise(resolve => canvas.addEventListener('click', resolve, { once: true }));
+
+    lineEl.textContent = '';
+
+    // Render loop (~30 fps cap)
+    let _last = 0;
+    engine.runRenderLoop(() => {
+      const now = performance.now();
+      if (now - _last >= 33) { _last = now; scene.render(); }
+    });
+    window.addEventListener('resize', () => engine.resize());
+
+    // Start scene
+    runScene();
+
+  </script>
+</body>
+</html>

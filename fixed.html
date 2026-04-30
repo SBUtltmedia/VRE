@@ -6,8 +6,8 @@
   <style>
     html, body, #renderCanvas { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; }
   </style>
-  <script src="https://preview.babylonjs.com/babylon.js"></script>
-  <script src="https://preview.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
+  <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.js"></script>
 </head>
 <body>
   <canvas id="renderCanvas"></canvas>
@@ -21,6 +21,7 @@
 
     // Load babylon-vrm-loader (community), then vrm1-loader (our VRM 1.0 extension)
     const _vrmLoaderReady = new Promise((resolve, reject) => {
+        window.LOADERS = BABYLON;
         const s = document.createElement('script');
         s.src = 'https://xuhuisheng.github.io/babylonjs-vrm/babylon-vrm-loader.js';
         s.onload = () => {
