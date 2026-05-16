@@ -1,0 +1,224 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>VRM Blendshape Comparison & Analysis</title>
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
+  <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+  <script>window.LOADERS = BABYLON;</script>
+  <style>
+    html, body, #renderCanvas { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #050505; }
+    #ui { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.85); color: #eee; padding: 15px; font-family: monospace; border-radius: 8px; z-index: 100; border: 1px solid #444; width: 320px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+    .row { margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+    select, input { background: #222; color: #ccc; border: 1px solid #444; padding: 4px; font-family: monospace; }
+    label { font-size: 11px; color: #aaa; text-transform: uppercase; }
+    button { background: #0076ff; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-family: monospace; font-weight: bold; width: 100%; }
+    button:hover { background: #005acc; }
+    #loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: #050505; color: #666; font-family: monospace; z-index: 200; }
+    #analysis { margin-top: 15px; font-size: 11px; border-top: 1px solid #444; padding-top: 10px; max-height: 200px; overflow-y: auto; color: #4f4; }
+    .metric { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <div id="loading">Loading models...</div>
+  <div id="ui">
+    <div class="row">
+      <label>Ref:</label>
+      <input type="text" id="refPath" value="models/Seed-san.vrm" style="width: 180px;">
+    </div>
+    <div class="row">
+      <label>Target:</label>
+      <input type="text" id="targetPath" value="models/Black/Black_F_1_Casual.vrm" style="width: 180px;">
+    </div>
+    <div class="row">
+      <button id="loadBtn">RELOAD MODELS</button>
+    </div>
+    <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
+    <div class="row">
+      <label>Expression:</label>
+      <select id="exprSelect">
+        <option value="aa">aa (A)</option>
+        <option value="ih">ih (I)</option>
+        <option value="uu">uu (U)</option>
+        <option value="ee">ee (E)</option>
+        <option value="oh">oh (O)</option>
+        <option value="blink">blink</option>
+        <option value="blinkLeft">blinkLeft</option>
+        <option value="blinkRight">blinkRight</option>
+        <option value="angry">angry</option>
+        <option value="happy">happy</option>
+        <option value="sad">sad</option>
+        <option value="relaxed">relaxed</option>
+        <option value="surprised">surprised</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Weight:</label>
+      <input type="range" id="weightSlider" min="0" max="1" step="0.01" value="1" style="width: 150px;">
+      <span id="weightVal">1.00</span>
+    </div>
+    <div class="row">
+      <label>Wireframe:</label>
+      <input type="checkbox" id="wireframeCheck" checked>
+    </div>
+    <div class="row">
+      <label>Overlay:</label>
+      <input type="checkbox" id="overlayCheck" checked>
+    </div>
+    <div class="row">
+        <button id="analyzeBtn" style="background: #28a745;">RUN PNG ANALYSIS</button>
+    </div>
+    <div id="analysis">
+        <div>Ready for analysis...</div>
+    </div>
+  </div>
+  <canvas id="renderCanvas"></canvas>
+
+  <script type="module">
+    window.LOADERS = BABYLON;
+    await new Promise((res) => {
+        const s = document.createElement('script');
+        s.src = 'https://xuhuisheng.github.io/babylonjs-vrm/babylon-vrm-loader.js';
+        s.onload = () => {
+            const s2 = document.createElement('script');
+            s2.src = 'vrm1-loader.js';
+            s2.onload = res;
+            document.head.appendChild(s2);
+        };
+        document.head.appendChild(s);
+    });
+
+    const canvas = document.getElementById('renderCanvas');
+    const engine = new BABYLON.Engine(canvas, true);
+    const scene = new BABYLON.Scene(engine);
+    scene.clearColor = new BABYLON.Color4(0.01, 0.01, 0.01, 1);
+
+    const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI/2, Math.PI/2.1, 0.6, new BABYLON.Vector3(0, 1.62, 0), scene);
+    camera.wheelPrecision = 200;
+    camera.minZ = 0.001;
+    camera.attachControl(canvas, true);
+
+    const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+    light.intensity = 1.0;
+
+    let refActor = null;
+    let targetActor = null;
+
+    async function loadVRM(path, xOffset) {
+        const preMgrCount = scene.metadata?.vrmManagers?.length ?? 0;
+        const preRootIds = new Set(scene.rootNodes.map(n => n.uniqueId));
+        
+        await BABYLON.ImportMeshAsync("", "", path, scene);
+        
+        const mgr = scene.metadata?.vrmManagers?.[preMgrCount];
+        const root = scene.rootNodes.find(n => !preRootIds.has(n.uniqueId));
+        
+        if (!mgr || !root) return null;
+        
+        root.position.set(xOffset, 0, 0);
+        updateWireframe(root, document.getElementById('wireframeCheck').checked);
+        
+        return { mgr, root, path };
+    }
+
+    function updateWireframe(root, enabled) {
+        root.getChildMeshes().forEach(m => {
+            if (m.material) {
+                m.material.wireframe = enabled;
+                m.material.fillMode = enabled ? BABYLON.Material.WireFrameFillMode : BABYLON.Material.TriangleFillMode;
+                m.material.backFaceCulling = false;
+            }
+        });
+    }
+
+    async function reload() {
+        document.getElementById('loading').style.display = 'flex';
+        
+        if (refActor) refActor.root.dispose();
+        if (targetActor) targetActor.root.dispose();
+        scene.metadata.vrmManagers = [];
+
+        const refPath = document.getElementById('refPath').value;
+        const targetPath = document.getElementById('targetPath').value;
+        const isOverlay = document.getElementById('overlayCheck').checked;
+
+        refActor = await loadVRM(refPath, isOverlay ? 0 : -0.15);
+        targetActor = await loadVRM(targetPath, isOverlay ? 0 : 0.15);
+
+        if (isOverlay) {
+            refActor?.root.getChildMeshes().forEach(m => { if(m.material) { m.material.diffuseColor = new BABYLON.Color3(0, 1, 0); m.material.emissiveColor = new BABYLON.Color3(0, 0.5, 0); } });
+            targetActor?.root.getChildMeshes().forEach(m => { if(m.material) { m.material.diffuseColor = new BABYLON.Color3(1, 0, 0); m.material.emissiveColor = new BABYLON.Color3(0.5, 0, 0); } });
+        }
+
+        document.getElementById('loading').style.display = 'none';
+        applyExpression();
+    }
+
+    function applyExpression() {
+        const name = document.getElementById('exprSelect').value;
+        const weight = parseFloat(document.getElementById('weightSlider').value);
+        document.getElementById('weightVal').textContent = weight.toFixed(2);
+
+        [refActor, targetActor].forEach(actor => {
+            if (!actor) return;
+            if (actor.mgr.isVRM1) {
+                actor.mgr.expressionManager?.setExpressionWeight(name, weight);
+            } else {
+                if (actor.mgr.setExpressionWeight) {
+                    actor.mgr.setExpressionWeight(name, weight);
+                }
+            }
+        });
+    }
+
+    async function runAnalysis() {
+        const analysisEl = document.getElementById('analysis');
+        analysisEl.innerHTML = '<div>Analyzing mesh differences...</div>';
+        
+        if (!refActor || !targetActor) {
+            analysisEl.innerHTML = '<div>Error: Both models must be loaded.</div>';
+            return;
+        }
+
+        // 1. Snapshot the current view
+        // 2. Compute basic bounding box comparison
+        const refFacePos = refActor.mgr.humanoidBone.head.getAbsolutePosition();
+        const targetFacePos = targetActor.mgr.humanoidBone.head.getAbsolutePosition();
+        
+        const dist = BABYLON.Vector3.Distance(refFacePos, targetFacePos);
+        
+        analysisEl.innerHTML += `<div class="metric"><span>Head Alignment</span> <span>${dist.toFixed(4)}m</span></div>`;
+        
+        // Find "Face" meshes
+        const findFace = (actor) => actor.root.getChildMeshes().find(m => m.name.toLowerCase().includes('face') || m.name.toLowerCase().includes('head'));
+        const refMesh = findFace(refActor);
+        const targetMesh = findFace(targetActor);
+        
+        if (refMesh && targetMesh) {
+            const refCount = refMesh.getTotalVertices();
+            const targetCount = targetMesh.getTotalVertices();
+            analysisEl.innerHTML += `<div class="metric"><span>Ref Verts</span> <span>${refCount}</span></div>`;
+            analysisEl.innerHTML += `<div class="metric"><span>Target Verts</span> <span>${targetCount}</span></div>`;
+        }
+        
+        analysisEl.innerHTML += '<div><b>Visual Analysis Suggestion:</b> Check jawOpen depth and lip corner symmetry. Use overlay mode to see volume mismatches.</div>';
+    }
+
+    document.getElementById('loadBtn').addEventListener('click', reload);
+    document.getElementById('exprSelect').addEventListener('change', applyExpression);
+    document.getElementById('weightSlider').addEventListener('input', applyExpression);
+    document.getElementById('wireframeCheck').addEventListener('change', (e) => {
+        if (refActor) updateWireframe(refActor.root, e.target.checked);
+        if (targetActor) updateWireframe(targetActor.root, e.target.checked);
+    });
+    document.getElementById('overlayCheck').addEventListener('change', reload);
+    document.getElementById('analyzeBtn').addEventListener('click', runAnalysis);
+
+    reload();
+
+    engine.runRenderLoop(() => scene.render());
+    window.addEventListener('resize', () => engine.resize());
+
+  </script>
+</body>
+</html>
