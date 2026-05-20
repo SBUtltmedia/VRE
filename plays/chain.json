@@ -1,0 +1,23 @@
+{
+  "metadata": {
+    "title": "Animation Chaining Test",
+    "description": "Sequence testing for root motion accumulation"
+  },
+  "actor": {
+    "id": "test-character",
+    "vrm": "models/AIAN/AIAN_F_1_Casual.vrm",
+    "startPosition": { "x": 0, "y": 0, "z": 0 }
+  },
+  "sequence": [
+    {
+      "name": "walk",
+      "body": "VRMA/split/07_01_body.vrma",
+      "root": "VRMA/split/07_01_root.vrma"
+    },
+    {
+      "name": "stand",
+      "body": "VRMA/split/111_28_body.vrma",
+      "root": "VRMA/split/111_28_root.vrma"
+    }
+  ]
+}

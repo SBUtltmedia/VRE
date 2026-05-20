@@ -1,0 +1,16 @@
+Codebase Patching Script (applyPatch.py)This utility automates the process of modifying local source files via a standardized, JSON-driven update protocol. It acts as the local deployment bridge between an external orchestration context (such as an AI model) and the physical codebase storage volume.🛠 Operational CoreThe utility reads commands structured inside a local configuration layout or standard input streaming context, performing strict operations based on an instruction array map.Complete Protocol SpecificationThe execution envelope must follow this JSON schema:{
+  "patches": [
+    {
+      "filepath": "string (relative target path from current working directory)",
+      "action": "string ('patch' | 'create')",
+      "content": "string (fully qualified source file content required only if action is 'create')",
+      "diffs": [
+        {
+          "find": "string (exact block signature matching sequence to remove)",
+          "replace": "string (exact block replacement code string to inject)"
+        }
+      ]
+    }
+  ]
+}
+🔄 Action Execution Matrix1. The create ActionIntent: Used to instantiate brand-new workspace modules or to clean-overwrite files completely (e.g., initializing from a touch boundary or a broken lint state).Behavior: Circumvents finding algorithms entirely. It overwrites or generates the target path specified by filepath with the absolute payload found inside the content property.Error Fallback: Fails if directory access permissions are denied or if path syntax errors occur.2. The patch ActionIntent: Used to make surgical adjustments within complex files while preserving surrounding layout code blocks.Behavior: Loops sequentially through the diffs block array. For every object item, it runs an exact text string search matching the find content value and replaces it with the sequence mapped inside the replace property.Error Fallback: If a block cannot find a 1:1 character-accurate string sequence match (due to unexpected indents, white-spaces, or line-breaks), the execution reports an error flag indicator (0/1 blocks updated) but continues safely through the remaining file tracking blocks without hard-crashing.⚠️ Development Constraints for AI Automated EnginesExact Whitespace Requirements: The finding engine looks for exact line breaks (\n or \r\n), tab indent structures, and spacing boundaries. Always extract complete function signatures or include distinct structural context lines inside the find criteria sequence to bypass ambiguity.The Blank-File Target Rule: Never issue a patch action against a newly initialized or completely empty file (such as a shell touch asset). A blank target file contains no text for a find property to locate, causing an immediate update failure. Always upgrade the strategy to a create action instead.Strict JSON String Escaping: Since the entire runtime payload travels inside an integrated JSON structure, all double quotes ("), control sequences, or reverse-slashes (\) present in source target segments must be carefully escaped (\", \\) within the transaction payload to prevent string formatting crashes.

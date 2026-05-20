@@ -1,0 +1,460 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Side-by-Side Face Diagnostic Rig</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <link rel="icon" href="data:,">
+  
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
+  <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+  <script>window.LOADERS = BABYLON;</script>
+
+  <style>
+    html, body, #renderCanvas { width:100%; height:100%; margin:0; padding:0; overflow:hidden; background:#05050a; }
+    
+    #ui {
+      position:absolute; bottom:0; left:0; right:0;
+      padding:16px 32px 24px;
+      background:linear-gradient(transparent, rgba(0,0,0,.82));
+      font-family:Georgia, serif; color:#fff; pointer-events:none;
+      text-align:center; z-index: 5;
+    }
+    #speaker { font-size:12px; letter-spacing:.15em; text-transform:uppercase;
+               opacity:.55; margin-bottom:5px; }
+    #line    { font-size:16px; line-height:1.55; max-width:600px; margin:0 auto;
+               text-shadow:0 1px 6px rgba(0,0,0,.9); min-height:1.6em; }
+    #prog-bg { height:2px; background:rgba(255,255,255,.12); border-radius:1px; margin-top:12px; }
+    #prog-bar{ height:100%; background:rgba(180,200,255,.65); border-radius:1px;
+               width:0%; transition:width .12s linear; }
+
+    #plates { position:absolute; bottom:90px; left:0; right:0;
+              display:flex; justify-content:space-around; pointer-events:none; z-index: 5; }
+    .plate  { font:11px/1 monospace; letter-spacing:.12em; text-transform:uppercase;
+              color:rgba(255,255,255,.35); padding:4px 10px;
+              background:rgba(0,0,0,.4); border-radius:4px; }
+    .plate.active { color:#aef; background:rgba(40,80,140,.55); }
+
+    #hud {
+      position: absolute; top: 16px; left: 16px; 
+      background: rgba(0, 0, 0, 0.75); border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 6px; padding: 14px 18px; width: 280px;
+      font: 12px/1.4 monospace; color: #fff; pointer-events: none; z-index: 5;
+    }
+    .hud-title { font-weight: bold; color: #4bf; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .track-row { display: flex; justify-content: space-between; margin-bottom: 3px; font-size: 11px; }
+    .track-val { color: #aef; font-weight: bold; }
+
+    #start-overlay {
+      position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      background:rgba(10,10,18,.88); cursor:pointer; z-index:10;
+      font:18px Georgia, serif; color:rgba(255,255,255,.7); letter-spacing:.06em;
+    }
+    #loading {
+      position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      font:13px monospace; color:rgba(255,255,255,.4); background:#0a0a12; z-index:20;
+    }
+
+    #head-toggle {
+      position:fixed; top:16px; right:16px;
+      background:rgba(0,0,0,.45); color:rgba(255,255,255,.7);
+      border:1px solid rgba(255,255,255,.15); border-radius:4px;
+      font:11px/1 monospace; letter-spacing:.1em; text-transform:uppercase;
+      padding:7px 13px; cursor:pointer; z-index:100; user-select:none;
+      display:flex; align-items:center; gap:7px;
+    }
+    #head-toggle .led { width:8px; height:8px; border-radius:50%; background:#4bf; box-shadow:0 0 5px #4bf; transition:background .3s, box-shadow .3s; flex-shrink:0; }
+    #head-toggle.off .led { background:#444; box-shadow:none; }
+    #head-toggle .hint { opacity:.4; font-size:9px; }
+  </style>
+</head>
+<body>
+
+  <canvas id="renderCanvas"></canvas>
+
+  <div id="hud">
+    
+    <div class="hud-title">Live Morph Targets</div>
+    <div id="tracking-dump">Awaiting narrative track...</div>
+  </div>
+
+  <div id="ui">
+    <div id="speaker"></div>
+    <div id="line"></div>
+    <div id="prog-bg"><div id="prog-bar"></div></div>
+  </div>
+
+  <div id="plates"></div>
+
+  <div id="loading">Loading diagnostic scene…</div>
+  <div id="start-overlay" style="display:none">Click to run analysis</div>
+  <button id="head-toggle"><span class="led"></span>HEAD TILT<span class="hint">H</span></button>
+
+  <script type="module">
+    BABYLON.TransformNode.prototype.getTotalVertices ??= () => 0;
+
+    const speakerEl    = document.getElementById('speaker');
+    const lineEl       = document.getElementById('line');
+    const progEl       = document.getElementById('prog-bar');
+    const platesEl     = document.getElementById('plates');
+    const loadEl       = document.getElementById('loading');
+    const startEl      = document.getElementById('start-overlay');
+    const headToggleEl = document.getElementById('head-toggle');
+    const dumpEl       = document.getElementById('tracking-dump');
+
+    // ── 1. Hydrate Environment Logic ──────────────────────────────────────────
+    const sceneData = await fetch('traffic_scene.json').then(r => r.json());
+
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://xuhuisheng.github.io/babylonjs-vrm/babylon-vrm-loader.js';
+      s.onload = res;
+      s.onerror = rej;
+      document.head.appendChild(s);
+    });
+
+    const canvas = document.getElementById('renderCanvas');
+    const engine = new BABYLON.Engine(canvas, true);
+    const scene  = new BABYLON.Scene(engine);
+    window.scene = scene;
+
+    scene.ambientColor = new BABYLON.Color3(.08, .08, .12);
+    scene.clearColor   = new BABYLON.Color4(.03, .03, .07, 1);
+
+    const fill = new BABYLON.HemisphericLight('fill', new BABYLON.Vector3(0, 1, 0), scene);
+    fill.intensity   = .45;
+    fill.diffuse     = new BABYLON.Color3(.6, .65, .85);
+    fill.groundColor = new BABYLON.Color3(.04, .04, .08);
+
+    const key = new BABYLON.DirectionalLight('key', new BABYLON.Vector3(.2, -1, .4), scene);
+    key.intensity = 0.8;
+    key.diffuse   = new BABYLON.Color3(1, .95, .88);
+
+    const spot = new BABYLON.PointLight('spot', new BABYLON.Vector3(0, 1.7, 0.4), scene);
+    spot.diffuse    = new BABYLON.Color3(1, .95, .9);
+    spot.intensity  = 0.8;
+    spot.range      = 4.0;
+
+    // Close-up framing camera
+    const camera = new BABYLON.FreeCamera('cam', new BABYLON.Vector3(0, 1.58, 0.75), scene);
+    camera.setTarget(new BABYLON.Vector3(0, 1.55, 0));
+    camera.minZ = 0.01;
+
+    const ARKIT_MAP = {
+      'jawOpen': 'aa', 'mouthFunnel': 'oh', 'mouthPucker': 'ou',
+      'eyeBlinkLeft': 'blinkLeft', 'eyeBlinkRight': 'blinkRight',
+      'mouthSmileLeft': 'happy', 'mouthSmileRight': 'happy'
+    };
+
+    function evalExprChannel(ch, t) {
+      const { times, weights } = ch;
+      if (t <= times[0]) return weights[0];
+      if (t >= times[times.length - 1]) return weights[weights.length - 1];
+      for (let i = 1; i < times.length; i++) {
+        if (t <= times[i]) {
+          const u = (t - times[i - 1]) / (times[i] - times[i - 1]);
+          return weights[i - 1] * (1 - u) + weights[i] * u;
+        }
+      }
+      return weights[weights.length - 1];
+    }
+
+    const resolveAsset = p => {
+      if (!p) return p;
+      if (p.startsWith('http')) return p;
+      let clean = p;
+      let resolved = clean;
+      if (clean.startsWith('plays/qwenTTS/')) {
+        resolved = '../qwenTTS/' + clean.substring(14);
+      } else if (clean.startsWith('qwenTTS/')) {
+        resolved = '../' + clean;
+      } else if (clean.startsWith('models/')) {
+        resolved = '../' + clean;
+      }
+      console.log(`[Rig Debug] resolveAsset: "${p}" resolved to -> "${resolved}"`);
+      return resolved;
+    };
+
+    async function loadFaceJSON(url) {
+      console.log(`[Rig Debug] loadFaceJSON initiated for: "${url}"`);
+      if (!url || url.endsWith('.vrma') || url.endsWith('.vrm')) {
+        console.log(`[Rig Debug] loadFaceJSON skipped (invalid or non-json format): "${url}"`);
+        return null;
+      }
+      try {
+        const response = await fetch(url);
+        console.log(`[Rig Debug] Fetch HTTP Status for "${url}":`, response.status);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        const { names, frames } = data;
+        console.log(`[Rig Debug] Parsed Face JSON. Blendshapes: ${names?.length}, Frames: ${frames?.length}`);
+        if (!names?.length || !frames?.length) {
+          console.warn(`[Rig Debug] Missing tracking name arrays or frames:`, url);
+          return null;
+        }
+        const times = frames.map(f => f.time);
+        return {
+          names,
+          duration: times[times.length - 1] ?? 0,
+          channels: names.map((name, i) => ({
+            name, times, weights: frames.map(f => f.weights[i] ?? 0)
+          })),
+          startT: null
+        };
+      } catch (e) { 
+        console.error('[Rig Debug] loadFaceJSON failed:', url, e); 
+        return null; 
+      }
+    }
+
+    // ── 2. Structural Mesh Loader ─────────────────────────────────────────────
+    const actors = {};
+    window.actors = actors;
+
+    async function loadActor(id, vrmPath, worldX) {
+      loadEl.textContent = `Hydrating ${id} meshes…`;
+      const preMgrCount = scene.metadata?.vrmManagers?.length ?? 0;
+      const preRootIds  = new Set(scene.rootNodes.map(n => n.uniqueId));
+
+      await BABYLON.ImportMeshAsync(vrmPath, scene);
+
+      const mgr  = scene.metadata?.vrmManagers?.[preMgrCount];
+      const root = scene.rootNodes.find(n => !preRootIds.has(n.uniqueId));
+      if (!mgr || !root) { console.error('[Rig] Hydration crash:', id); return; }
+
+      root.position.set(worldX, 0, 0);
+
+      if (root.skeleton) root.skeleton.returnToRest();
+      scene.animationGroups.forEach(g => { if(g.name.includes(id)) g.stop(); });
+
+      const morphMap = new Map();
+      const normalize = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+      for (const mesh of root.getChildMeshes(false)) {
+        const mtm = mesh.morphTargetManager;
+        if (!mtm) continue;
+        for (let i = 0; i < mtm.numTargets; i++) {
+          const mt = mtm.getTarget(i);
+          if (!mt.name) continue;
+          const rawName = mt.name;
+          morphMap.set(rawName.toLowerCase(), mt);
+          morphMap.set(normalize(rawName), mt);
+          const parts = rawName.split(/[._]/);
+          parts.forEach(p => {
+            if (p) {
+              morphMap.set(p.toLowerCase(), mt);
+              morphMap.set(normalize(p), mt);
+            }
+          });
+        }
+      }
+
+      actors[id] = { id, mgr, root, morphMap, faceAnim: null, worldX };
+    }
+
+    const METAHUMAN_VRM = '../models/MetaHuman/MetaHuman.vrm';
+
+    const [a0, a1] = sceneData.actors;
+    await loadActor(a0.id, METAHUMAN_VRM, +0.18);
+    await loadActor(a1.id, METAHUMAN_VRM, -0.18);
+
+    camera.position = new BABYLON.Vector3(0, 1.58, 0.58);
+    camera.setTarget(new BABYLON.Vector3(0, 1.56, 0));
+
+    // ── 3. Head Procedural Tracking ───────────────────────────────────────────
+    let headTiltEnabled = true;
+    const headStates = {};
+
+    for (const actor of Object.values(actors)) {
+      const head = actor.mgr?.humanoidBone?.head;
+      const neck = actor.mgr?.humanoidBone?.neck;
+      if (!head) continue;
+      headStates[actor.id] = {
+        energy: 0, tiltZ: 0, tiltX: 0,
+        phase: Math.random() * Math.PI * 2, head, neck,
+        headBase: head.rotationQuaternion?.clone() ?? BABYLON.Quaternion.Identity(),
+        neckBase: neck?.rotationQuaternion?.clone() ?? BABYLON.Quaternion.Identity()
+      };
+    }
+
+    function tickHead(actor, now) {
+      const s = headStates[actor.id];
+      if (!s) return;
+      if (!headTiltEnabled) {
+        s.tiltZ *= 0.85; s.tiltX *= 0.85; s.energy *= 0.85;
+      } else {
+        let targetEnergy = 0;
+        const fa = actor.faceAnim;
+        if (fa?.startT) {
+          const t = now - fa.startT;
+          const jawCh = fa.channels.find(c => c.name.toLowerCase() === 'jawopen' || c.name.toLowerCase() === 'aa');
+          if (jawCh) targetEnergy += evalExprChannel(jawCh, t) * 0.6;
+        }
+        s.energy += (targetEnergy - s.energy) * 0.08;
+        s.tiltZ += (Math.sin(now * 0.4 + s.phase) * 0.04 - s.tiltZ) * 0.04;
+        s.tiltX += (s.energy * -0.1 - s.tiltX) * 0.06;
+      }
+      s.head.rotationQuaternion = s.headBase.multiply(BABYLON.Quaternion.FromEulerAngles(s.tiltX, 0, s.tiltZ));
+      if (s.neck) s.neck.rotationQuaternion = s.neckBase.multiply(BABYLON.Quaternion.FromEulerAngles(s.tiltX * 0.4, 0, s.tiltZ * 0.4));
+    }
+
+    headToggleEl.addEventListener('click', () => {
+      headTiltEnabled = !headTiltEnabled; headToggleEl.className = headTiltEnabled ? '' : 'off';
+    });
+
+    // ── 4. Execution Interface Layer ──────────────────────────────────────────
+    let currentAudio = null;
+    let targetSpotX = 0;
+    const plateMap = {};
+    for (const def of sceneData.actors) {
+      const div = document.createElement('div');
+      div.className = 'plate'; div.textContent = def.id; div.id = `plate-${def.id}`;
+      platesEl.appendChild(div); plateMap[def.id] = div;
+    }
+
+    function setExpression(actor, name, value) {
+      const targetKey = name.toLowerCase();
+      const normalizedKey = targetKey.replace(/[^a-z0-9]/g, '');
+      const mt = actor.morphMap.get(targetKey) || actor.morphMap.get(normalizedKey);
+      if (mt) {
+        mt.influence = value;
+      } else {
+        const mapped = ARKIT_MAP[name];
+        if (mapped) {
+          const mappedKey = mapped.toLowerCase();
+          const normalizedMappedKey = mappedKey.replace(/[^a-z0-9]/g, '');
+          const mt2 = actor.morphMap.get(mappedKey) || actor.morphMap.get(normalizedMappedKey);
+          if (mt2) mt2.influence = value;
+        }
+      }
+    }
+
+    function resetFace(actor) {
+      if (!actor?.faceAnim) return;
+      for (const ch of actor.faceAnim.channels) setExpression(actor, ch.name, 0);
+      actor.faceAnim = null;
+    }
+
+    async function playEvent(event) {
+      const actor = actors[event.actor];
+      if (!actor) return;
+
+      speakerEl.textContent = event.actor.toUpperCase();
+      lineEl.textContent    = event.description ?? '';
+      
+      for (const [aid, div] of Object.entries(plateMap)) div.className = 'plate' + (aid === event.actor ? ' active' : '');
+      
+      // Instead of instantly snapping, set target and let render loop smoothly slide the light
+      targetSpotX = actor.root.position.x;
+
+      Object.values(actors).forEach(a => { if(a !== actor) resetFace(a); });
+      resetFace(actor);
+
+      console.log(`\n--- [Rig Debug] playEvent: ${event.actor.toUpperCase()} ---`);
+      console.log(`[Rig Debug] Dialogue: "${event.description}"`);
+      console.log(`[Rig Debug] Audio Track: "${event.audio}"`);
+      console.log(`[Rig Debug] LipSync Track: "${event.lipSync || event.layers?.FACE}"`);
+
+      const faceURL = resolveAsset(event.lipSync || event.layers?.FACE);
+      if (faceURL) {
+        const fa = await loadFaceJSON(faceURL);
+        if (fa) {
+          fa.startT = performance.now() / 1000;
+          actor.faceAnim = fa;
+          console.log(`[Rig Debug] Attached tracking animation data to ${actor.id} (${fa.duration}s duration)`);
+        } else {
+          console.warn(`[Rig Debug] Skipped or failed tracking animation binding for ${actor.id}`);
+        }
+      }
+
+      if (currentAudio) {
+        console.log(`[Rig Debug] Pausing active audio playback.`);
+        currentAudio.pause();
+        currentAudio = null;
+      }
+      if (event.audio) {
+        const resolvedAudio = resolveAsset(event.audio);
+        console.log(`[Rig Debug] Initializing HTML5 Audio: "${resolvedAudio}"`);
+        const aud = new Audio(resolvedAudio);
+        
+        aud.addEventListener('canplaythrough', () => console.log(`[Rig Debug] Audio payload fully buffered: "${resolvedAudio}"`), { once: true });
+        aud.addEventListener('play', () => console.log(`[Rig Debug] Audio playback started: "${resolvedAudio}"`), { once: true });
+        aud.addEventListener('error', (e) => console.error(`[Rig Debug] HTML5 Audio Element Error on "${resolvedAudio}":`, e));
+        
+        aud.play()
+          .then(() => console.log(`[Rig Debug] Playback Promise resolved for "${resolvedAudio}"`))
+          .catch(err => console.error(`[Rig Debug] Playback Promise rejected: "${resolvedAudio}"`, err));
+        currentAudio = aud;
+      }
+
+      const dur = event.duration ?? 3;
+      progEl.style.transition = 'none'; progEl.style.width = '0%';
+      requestAnimationFrame(() => {
+        progEl.style.transition = `width ${dur}s linear`;
+        progEl.style.width = '100%';
+      });
+    }
+
+    function startTimeline() {
+      console.log(`[Rig Debug] Starting narrative loop timeline (${sceneData.timeline.length} events found)`);
+      sceneData.timeline.forEach(event => {
+        console.log(`[Rig Debug] Queueing playEvent for ${event.actor} at Offset: ${event.start}s`);
+        setTimeout(() => playEvent(event), event.start * 1000);
+      });
+      const last = sceneData.timeline.at(-1);
+      if (last) {
+        const endDelay = (last.start + last.duration + 1) * 1000;
+        console.log(`[Rig Debug] Scheduling timeline completion at Offset: ${endDelay / 1000}s`);
+        setTimeout(() => {
+          console.log('[Rig Debug] Timeline completed. Executing cleanup protocols.');
+          speakerEl.textContent = ''; lineEl.textContent = ''; progEl.style.width = '0%';
+          if (currentAudio) {
+            console.log('[Rig Debug] Halting residual scene audio.');
+            currentAudio.pause();
+            currentAudio = null;
+          }
+          Object.values(actors).forEach(resetFace);
+          for (const div of Object.values(plateMap)) div.className = 'plate';
+        }, endDelay);
+      }
+    }
+
+    loadEl.style.display  = 'none';
+    startEl.style.display = 'flex';
+    startEl.addEventListener('click', () => { startEl.style.display = 'none'; startTimeline(); }, { once: true });
+
+    // ── 5. Clean Evaluation Loop ──────────────────────────────────────────────
+    engine.runRenderLoop(() => {
+      const now = performance.now() / 1000;
+      let hudHtml = "";
+
+      // Smoothly slide the spotlight target position
+      spot.position.x += (targetSpotX - spot.position.x) * 0.08;
+
+      for (const actor of Object.values(actors)) {
+        const fa = actor.faceAnim;
+        if (fa?.startT) {
+          const t = now - fa.startT;
+          if (t > fa.duration + 0.1) {
+            fa.channels.forEach(ch => setExpression(actor, ch.name, 0));
+            actor.faceAnim = null;
+          } else {
+            fa.channels.forEach(ch => {
+              const val = evalExprChannel(ch, t);
+              setExpression(actor, ch.name, val);
+              if (val > 0.15) {
+                hudHtml += `<div class="track-row"><span>${actor.id}.${ch.name}</span><span class="track-val">${val.toFixed(2)}</span></div>`;
+              }
+            });
+          }
+        }
+        tickHead(actor, now);
+      } 
+
+      dumpEl.innerHTML = hudHtml || "<div style='opacity:0.4'>No active blendshapes</div>";
+      scene.render();
+    });
+
+    window.addEventListener('resize', () => engine.resize());
+  </script>
+</body>
+</html>
