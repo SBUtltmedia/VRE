@@ -1,3 +1,6 @@
 [submodule "LAM_Audio2Expression-main"]
 	path = LAM_Audio2Expression-main
 	url = https://github.com/aigc3d/LAM_Audio2Expression.git
+[submodule "HY-Motion-1.0"]
+	path = HY-Motion-1.0
+	url = https://github.com/Tencent-Hunyuan/HY-Motion-1.0.git
