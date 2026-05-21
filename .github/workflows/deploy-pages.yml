@@ -72,6 +72,17 @@ jobs:
             cp -r plays/. _site/plays/
           fi
 
+          # qwenTTS directory
+          if [ -d qwenTTS ]; then
+            mkdir -p _site/qwenTTS
+            cp qwenTTS/*.wav _site/qwenTTS/ 2>/dev/null || echo "No .wav files found in qwenTTS"
+            if [ -d qwenTTS/lipsync ]; then
+              mkdir -p _site/qwenTTS/lipsync
+              cp -r qwenTTS/lipsync/. _site/qwenTTS/lipsync/ 2>/dev/null || echo "No files found in qwenTTS/lipsync"
+            fi
+            echo "Copied qwenTTS assets to _site/qwenTTS/"
+          fi
+
           # Create index.html using an explicitly indented heredoc configuration
           cat << 'INDEXEOF' > _site/index.html
           <!DOCTYPE html>
@@ -95,6 +106,7 @@ jobs:
             <a class="demo" href="babvrm.html">babvrm.html — VRM + VRMA player</a>
             <a class="demo" href="walk_and_talk.html">walk_and_talk.html — Walk & Talk (A2F JSON)</a>
             <a class="demo" href="arkit_compat_test_babylon.html">arkit_compat_test_babylon.html — ARKit expression cycler</a>
+            <a class="demo" href="speech.html">speech.html — qwenTTS Speech Synthesis</a>
             <h2>CDN Asset URLs</h2>
             <p class="assets">Base: <code>https://tltmedia.github.io/VRET/</code></p>
             <h3>VRM Models</h3>
@@ -105,6 +117,8 @@ jobs:
             </ul>
             <h3>VRMA Animations</h3>
             <p class="assets">Limited set (200 clips) hosted on GitHub Pages due to 1GB limit. Full set (2500+) available in the repository.<br>List: <a href="animations.json">animations.json</a>.<br>Example: <code>vrma/11_01.vrma</code></p>
+            <h3>qwenTTS Audio Assets</h3>
+            <p class="assets">Speech synthesis output files and lip-sync data.<br>Example: <code>qwenTTS/output_custom_voice_0.wav</code><br>Lip-sync: <code>qwenTTS/lipsync/</code></p>
           </body>
           </html>
           INDEXEOF
