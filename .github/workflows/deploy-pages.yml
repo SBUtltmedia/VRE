@@ -131,10 +131,12 @@ print(f'Filtered animations.json: {len(data)} -> {len(filtered)} entries')
           du -sh _site/
           echo "--- File count ---"
           find _site -type f | wc -l
+
       - name: Find large files causing heavy deployment
         run: |
           echo "=== Top 20 Largest Folders/Files ==="
           du -ah . | sort -rh | head -n 20
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
