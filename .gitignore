@@ -56,5 +56,12 @@ build/
 # Generated output
 screenshots/
 
-# Claude Code local settings
-.claude/
+# Large model categories (served from external CDN)
+models/AIAN/
+models/Asian/
+models/Black/
+models/Hispanic/
+models/MENA/
+models/NHPI/
+models/White/
+models/X_Non-validated/

@@ -28,23 +28,45 @@ jobs:
           mkdir -p _site/vrma
           mkdir -p _site/js
 
-          # Sync whole models/ directory to _site/models/
-          # This ensures AIAN, Asian, Black, etc. are all available.
-          # We use cp -r then cleanup or find to be surgical.
-          cp -r models _site/
-          find _site/models -name ".DS_Store" -delete
-          find _site/models -name "*.backup" -delete
-          # Optionally remove _CLEANED if any were left by mistake
-          find _site/models -name "*_CLEANED*" -delete
+          # Sync root models
+          mkdir -p _site/models
+          cp models/*.vrm _site/models/ 2>/dev/null || true
+          cp models/*.glb _site/models/ 2>/dev/null || true
 
-          # All VRMA animation clips (referenced by animations.json)
-          if [ -d vrma ]; then
-            cp vrma/*.vrma _site/vrma/
-            echo "Copied $(ls _site/vrma/ | wc -l) vrma files"
+          # Sync a subset of model categories to stay under 1GB
+          # We pick ONE model from each category to ensure diversity without exceeding limit
+          for d in models/AIAN models/Asian models/Black models/Hispanic models/MENA models/NHPI models/White models/X_Non-validated; do
+            if [ -d "$d" ]; then
+              dir_name=$(basename "$d")
+              mkdir -p "_site/models/$dir_name"
+              # Copy the first .vrm or .glb file found in the directory
+              ls "$d"/*.vrm "$d"/*.glb 2>/dev/null | head -n 1 | xargs -I {} cp {} "_site/models/$dir_name/"
+            fi
+          done
+
+          # All VRMA animation clips (case-insensitive check)
+          # Prune to first 200 animations to save space (approx 60MB)
+          VRMA_SRC=""
+          if [ -d VRMA ]; then VRMA_SRC="VRMA"; elif [ -d vrma ]; then VRMA_SRC="vrma"; fi
+          
+          if [ -n "$VRMA_SRC" ]; then
+            ls "$VRMA_SRC"/*.vrma | head -n 200 | xargs -I {} cp {} _site/vrma/
+            echo "Copied $(ls _site/vrma/ | wc -l) vrma files from $VRMA_SRC"
+            
+            # Filter animations.json to only include the animations we actually copied
+            python3 -c "
+import json, os
+valid = set(os.listdir('_site/vrma'))
+with open('animations.json', 'r') as f:
+    data = json.load(f)
+filtered = [a for a in data if os.path.basename(a['url']) in valid]
+with open('_site/animations.json', 'w') as f:
+    json.dump(filtered, f, indent=2)
+print(f'Filtered animations.json: {len(data)} -> {len(filtered)} entries')
+"
+          else
+            cp animations.json _site/ 2>/dev/null || echo "animations.json not found"
           fi
-
-          # animations.json — required by babvrm.html
-          cp animations.json _site/ 2>/dev/null || echo "animations.json not found"
 
           # JS libraries
           if [ -d js ]; then
@@ -55,6 +77,12 @@ jobs:
           for f in *.html; do
             [ -f "$f" ] && cp "$f" _site/
           done
+
+          # plays/ directory
+          if [ -d plays ]; then
+            mkdir -p _site/plays
+            cp -r plays/. _site/plays/
+          fi
 
           # index.html — landing page with links to demos and CDN asset list
           cat > _site/index.html << 'INDEXEOF'
@@ -83,17 +111,17 @@ jobs:
             <a class="demo" href="arkit_compat_test_babylon.html">arkit_compat_test_babylon.html — ARKit expression cycler</a>
 
             <h2>CDN Asset URLs</h2>
-            <p class="assets">Base: <code>https://sbutltmedia.github.io/VRE/</code></p>
+            <p class="assets">Base: <code>https://tltmedia.github.io/VRET/</code></p>
             <h3>VRM Models</h3>
             <ul class="assets">
-              <li><code>models/AliciaSolid.vrm</code></li>
-              <li><code>models/avatar.vrm</code></li>
-              <li><code>models/AIAN/AIAN_F_1_Casual.vrm</code> (VRM 1.0)</li>
+              <li><code>models/Cop.vrm</code></li>
+              <li><code>models/Seed-san.vrm</code></li>
+              <li><code>models/AIAN/AIAN_F_1_Casual.vrm</code></li>
             </ul>
             <h3>VRMA Animations</h3>
-            <p class="assets">2500+ clips under <code>vrma/</code> — full list in
-              <a href="animations.json">animations.json</a>.<br>
-              Example: <code>vrma/40_11.vrma</code></p>
+            <p class="assets">Limited set (200 clips) hosted on GitHub Pages due to 1GB limit. Full set (2500+) available in the repository.<br>
+              List: <a href="animations.json">animations.json</a>.<br>
+              Example: <code>vrma/11_01.vrma</code></p>
           </body>
           </html>
           INDEXEOF
