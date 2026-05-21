@@ -53,8 +53,8 @@ jobs:
             ls "$VRMA_SRC"/*.vrma | head -n 200 | xargs -I {} cp {} _site/vrma/
             echo "Copied $(ls _site/vrma/ | wc -l) vrma files from $VRMA_SRC"
             
-            # Filter animations.json to only include the animations we actually copied
-            python3 -c "
+            # Clean Python execution using a Heredoc
+            python3 << 'PYTHONEOF'
 import json, os
 valid = set(os.listdir('_site/vrma'))
 with open('animations.json', 'r') as f:
@@ -63,7 +63,8 @@ filtered = [a for a in data if os.path.basename(a['url']) in valid]
 with open('_site/animations.json', 'w') as f:
     json.dump(filtered, f, indent=2)
 print(f'Filtered animations.json: {len(data)} -> {len(filtered)} entries')
-"
+PYTHONEOF
+
           else
             cp animations.json _site/ 2>/dev/null || echo "animations.json not found"
           fi
