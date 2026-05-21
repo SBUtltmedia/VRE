@@ -34,7 +34,7 @@ jobs:
           cp models/*.glb _site/models/ 2>/dev/null || true
 
           # Sync a subset of model categories to stay under 1GB
-          for d in models/AIAN models/Asian models/Black models/Hispanic models/MENA models/NHPI models/White models/X_Non-validated; do
+          for d in  models/MetaHuman models/AIAN models/Asian models/Black models/Hispanic models/MENA models/NHPI models/White models/X_Non-validated; do
             if [ -d "$d" ]; then
               dir_name=$(basename "$d")
               mkdir -p "_site/models/$dir_name"
