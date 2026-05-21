@@ -1,0 +1,12 @@
+Batch processing summary - 20260520_071633
+==================================================
+Number of processed files: 1
+Total number of texts: 12
+Number of successful tasks: 12
+Number of failed tasks: 0
+Success rate: 100.0%
+
+File: traffic_stop_prompts
+  Total: 12, Success: 12, Failed: 0
+  Number of saved files: 24
+

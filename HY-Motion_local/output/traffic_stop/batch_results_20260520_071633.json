@@ -1,0 +1,205 @@
+[
+  {
+    "input_file": "traffic_stop_prompts.json",
+    "basename": "traffic_stop_prompts",
+    "total": 12,
+    "success": 12,
+    "failed": 0,
+    "details": [
+      {
+        "formatted_idx": "00000001",
+        "status": "success",
+        "text": "nervous driver sitting in car, hands on steering wheel, tense posture, looking forward with anxiety",
+        "rewritten_text": "nervous driver sitting in car, hands on steering wheel, tense posture, looking forward with anxiety",
+        "duration": 4.0,
+        "seeds": [
+          981
+        ],
+        "file_or_html": [
+          "output/traffic_stop\\traffic_stop_jordan\\00000001_000.fbx",
+          "output/traffic_stop\\traffic_stop_jordan\\00000001_000.txt"
+        ]
+      },
+      {
+        "formatted_idx": "00000002",
+        "status": "success",
+        "text": "confident young driver gesturing with frustration, leaning forward in seat, defensive body language",
+        "rewritten_text": "confident young driver gesturing with frustration, leaning forward in seat, defensive body language",
+        "duration": 5.0,
+        "seeds": [
+          949
+        ],
+        "file_or_html": [
+          "output/traffic_stop\\traffic_stop_jordan\\00000002_000.fbx",
+          "output/traffic_stop\\traffic_stop_jordan\\00000002_000.txt"
+        ]
+      },
+      {
+        "formatted_idx": "00000003",
+        "status": "success",
+        "text": "scared teenager reaching slowly toward lap, fearful expression, hesitant movements",
+        "rewritten_text": "scared teenager reaching slowly toward lap, fearful expression, hesitant movements",
+        "duration": 8.0,
+        "seeds": [
+          406
+        ],
+        "file_or_html": [
+          "output/traffic_stop\\traffic_stop_jordan\\00000003_000.fbx",
+          "output/traffic_stop\\traffic_stop_jordan\\00000003_000.txt"
+        ]
+      },
+      {
+        "formatted_idx": "00000004",
+        "status": "success",
+        "text": "driver showing submission, hands raised slowly, cooperative posture, pleading expression",
+        "rewritten_text": "driver showing submission, hands raised slowly, cooperative posture, pleading expression",
+        "duration": 4.0,
+        "seeds": [
+          71
+        ],
+        "file_or_html": [
+          "output/traffic_stop\\traffic_stop_jordan\\00000004_000.fbx",
+          "output/traffic_stop\\traffic_stop_jordan\\00000004_000.txt"
+        ]
+      },
+      {
+        "formatted_idx": "00000005",
+        "status": "success",
+        "text": "driver trying to reason, reaching for wallet with one hand, pleading expression",
+        "rewritten_text": "driver trying to reason, reaching for wallet with one hand, pleading expression",
+        "duration": 5.0,
+        "seeds": [
+          95
+        ],
+        "file_or_html": [
+          "output/traffic_stop\\traffic_stop_jordan\\00000005_000.fbx",
+          "output/traffic_stop\\traffic_stop_jordan\\00000005_000.txt"
+        ]
+      },
+      {
+        "formatted_idx": "00000006",
+        "status": "success",
+        "text": "driver terrified with hands in air, trembling, wide-eyed fear, submissive body language",
+        "rewritten_text": "driver terrified with hands in air, trembling, wide-eyed fear, submissive body language",
+        "duration": 5.0,
+        "seeds": [
+          950
+        ],
+        "file_or_html": [
+          "output/traffic_stop\\traffic_stop_jordan\\00000006_000.fbx",
+          "output/traffic_stop\\traffic_stop_jordan\\00000006_000.txt"
+        ]
+      },
+      {
+        "formatted_idx": "00000001",
+        "status": "success",
+        "text": "police officer standing outside car window, authoritative stance, hand on weapon, stern expression",
+        "rewritten_text": "police officer standing outside car window, authoritative stance, hand on weapon, stern expression",
+        "duration": 3.0,
+        "seeds": [
+          387
+        ],
+        "file_or_html": [
+          "output/traffic_stop\\traffic_stop_officer\\00000001_000.fbx",
+          "output/traffic_stop\\traffic_stop_officer\\00000001_000.txt"
+        ]
+      },
+      {
+        "formatted_idx": "00000002",
+        "status": "success",
+        "text": "police officer pointing at driver, commanding hand motion, serious facial expression",
+        "rewritten_text": "police officer pointing at driver, commanding hand motion, serious facial expression",
+        "duration": 7.0,
+        "seeds": [
+          556
+        ],
+        "file_or_html": [
+          "output/traffic_stop\\traffic_stop_officer\\00000002_000.fbx",
+          "output/traffic_stop\\traffic_stop_officer\\00000002_000.txt"
+        ]
+      },
+      {
+        "formatted_idx": "00000003",
+        "status": "success",
+        "text": "police officer shouting with intensity, aggressive hand gestures, angry facial expression",
+        "rewritten_text": "police officer shouting with intensity, aggressive hand gestures, angry facial expression",
+        "duration": 6.0,
+        "seeds": [
+          624
+        ],
+        "file_or_html": [
+          "output/traffic_stop\\traffic_stop_officer\\00000003_000.fbx",
+          "output/traffic_stop\\traffic_stop_officer\\00000003_000.txt"
+        ]
+      },
+      {
+        "formatted_idx": "00000004",
+        "status": "success",
+        "text": "police officer giving commands with sharp hand motions, intense eye contact",
+        "rewritten_text": "police officer giving commands with sharp hand motions, intense eye contact",
+        "duration": 6.0,
+        "seeds": [
+          598
+        ],
+        "file_or_html": [
+          "output/traffic_stop\\traffic_stop_officer\\00000004_000.fbx",
+          "output/traffic_stop\\traffic_stop_officer\\00000004_000.txt"
+        ]
+      },
+      {
+        "formatted_idx": "00000005",
+        "status": "success",
+        "text": "police officer yelling, gun drawn, warning gesture, threatening posture",
+        "rewritten_text": "police officer yelling, gun drawn, warning gesture, threatening posture",
+        "duration": 9.0,
+        "seeds": [
+          375
+        ],
+        "file_or_html": [
+          "output/traffic_stop\\traffic_stop_officer\\00000005_000.fbx",
+          "output/traffic_stop\\traffic_stop_officer\\00000005_000.txt"
+        ]
+      },
+      {
+        "formatted_idx": "00000006",
+        "status": "success",
+        "text": "police officer giving calm but firm instructions, controlled hand motions, authoritative but not aggressive",
+        "rewritten_text": "police officer giving calm but firm instructions, controlled hand motions, authoritative but not aggressive",
+        "duration": 5.0,
+        "seeds": [
+          560
+        ],
+        "file_or_html": [
+          "output/traffic_stop\\traffic_stop_officer\\00000006_000.fbx",
+          "output/traffic_stop\\traffic_stop_officer\\00000006_000.txt"
+        ]
+      }
+    ],
+    "saved_files": [
+      "output/traffic_stop\\traffic_stop_jordan\\00000001_000.fbx",
+      "output/traffic_stop\\traffic_stop_jordan\\00000001_000.txt",
+      "output/traffic_stop\\traffic_stop_jordan\\00000002_000.fbx",
+      "output/traffic_stop\\traffic_stop_jordan\\00000002_000.txt",
+      "output/traffic_stop\\traffic_stop_jordan\\00000003_000.fbx",
+      "output/traffic_stop\\traffic_stop_jordan\\00000003_000.txt",
+      "output/traffic_stop\\traffic_stop_jordan\\00000004_000.fbx",
+      "output/traffic_stop\\traffic_stop_jordan\\00000004_000.txt",
+      "output/traffic_stop\\traffic_stop_jordan\\00000005_000.fbx",
+      "output/traffic_stop\\traffic_stop_jordan\\00000005_000.txt",
+      "output/traffic_stop\\traffic_stop_jordan\\00000006_000.fbx",
+      "output/traffic_stop\\traffic_stop_jordan\\00000006_000.txt",
+      "output/traffic_stop\\traffic_stop_officer\\00000001_000.fbx",
+      "output/traffic_stop\\traffic_stop_officer\\00000001_000.txt",
+      "output/traffic_stop\\traffic_stop_officer\\00000002_000.fbx",
+      "output/traffic_stop\\traffic_stop_officer\\00000002_000.txt",
+      "output/traffic_stop\\traffic_stop_officer\\00000003_000.fbx",
+      "output/traffic_stop\\traffic_stop_officer\\00000003_000.txt",
+      "output/traffic_stop\\traffic_stop_officer\\00000004_000.fbx",
+      "output/traffic_stop\\traffic_stop_officer\\00000004_000.txt",
+      "output/traffic_stop\\traffic_stop_officer\\00000005_000.fbx",
+      "output/traffic_stop\\traffic_stop_officer\\00000005_000.txt",
+      "output/traffic_stop\\traffic_stop_officer\\00000006_000.fbx",
+      "output/traffic_stop\\traffic_stop_officer\\00000006_000.txt"
+    ]
+  }
+]
