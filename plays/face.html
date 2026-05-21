@@ -103,8 +103,8 @@
     const headToggleEl = document.getElementById('head-toggle');
     const dumpEl       = document.getElementById('tracking-dump');
 
-    // ── 1. Hydrate Environment Logic ──────────────────────────────────────────
-    const sceneData = await fetch('traffic_scene.json').then(r => r.json());
+    const jsonName = window.location.hash.slice(1) || 'traffic_scene';
+    const sceneData = await fetch(`${jsonName}.json`).then(r => r.json());
 
     await new Promise((res, rej) => {
       const s = document.createElement('script');
@@ -252,11 +252,9 @@
       actors[id] = { id, mgr, root, morphMap, faceAnim: null, worldX };
     }
 
-    const METAHUMAN_VRM = '../models/MetaHuman/MetaHuman.vrm';
-
     const [a0, a1] = sceneData.actors;
-    await loadActor(a0.id, METAHUMAN_VRM, +0.18);
-    await loadActor(a1.id, METAHUMAN_VRM, -0.18);
+    await loadActor(a0.id, resolveAsset(a0.vrm), +0.18);
+    await loadActor(a1.id, resolveAsset(a1.vrm), -0.18);
 
     camera.position = new BABYLON.Vector3(0, 1.58, 0.58);
     camera.setTarget(new BABYLON.Vector3(0, 1.56, 0));

@@ -87,9 +87,6 @@
                 const pos = character.root.position;
                 posEl.textContent = `${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)}`;
                 clipEl.textContent = document.body.getAttribute("data-current") || "-";
-                
-                // Keep cameras following the character
-                stage.updateCameraTargets(new BABYLON.Vector3(pos.x, pos.y + 1, pos.z));
             });
         }, { once: true });
     }

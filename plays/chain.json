@@ -1,7 +1,7 @@
 {
   "metadata": {
     "title": "Animation Chaining Test",
-    "description": "Sequence testing for root motion accumulation"
+    "description": "81_04 walk-forward-and-turn-right played 4 times to verify root motion accumulation forms a rough square"
   },
   "actor": {
     "id": "test-character",
@@ -10,14 +10,24 @@
   },
   "sequence": [
     {
-      "name": "walk",
-      "body": "VRMA/split/07_01_body.vrma",
-      "root": "VRMA/split/07_01_root.vrma"
+      "name": "81_04-walk-turn-1",
+      "body": "VRMA/split/81_04_body.vrma",
+      "root": "VRMA/split/81_04_root.vrma"
     },
     {
-      "name": "stand",
-      "body": "VRMA/split/111_28_body.vrma",
-      "root": "VRMA/split/111_28_root.vrma"
+      "name": "81_04-walk-turn-2",
+      "body": "VRMA/split/81_04_body.vrma",
+      "root": "VRMA/split/81_04_root.vrma"
+    },
+    {
+      "name": "81_04-walk-turn-3",
+      "body": "VRMA/split/81_04_body.vrma",
+      "root": "VRMA/split/81_04_root.vrma"
+    },
+    {
+      "name": "81_04-walk-turn-4",
+      "body": "VRMA/split/81_04_body.vrma",
+      "root": "VRMA/split/81_04_root.vrma"
     }
   ]
 }

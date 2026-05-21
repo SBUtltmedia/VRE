@@ -47,6 +47,7 @@ build/
 .env
 .env.local
 .env.*.local
+.qwen/
 
 # Compressed files
 *.zip
