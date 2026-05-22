@@ -69,6 +69,25 @@
         const character = new Character(def.id, root, mgr);
         const timeline = new ChainTimeline(stage, character);
 
+        // Debug: Granular VRMA track inspection
+        window.inspectVRMA = async (url) => {
+            const container = await BABYLON.LoadAssetContainerAsync(url, stage.scene);
+            const group = container.animationGroups[0];
+            console.log(`[Debug] Inspecting VRMA: ${url}`);
+            group.targetedAnimations.forEach(ta => {
+                if (ta.animation.targetProperty === "rotationQuaternion") {
+                    const keys = ta.animation.getKeys();
+                    const first = keys[0].value.toEulerAngles();
+                    const last = keys[keys.length - 1].value.toEulerAngles();
+                    const deltaY = (last.y - first.y) * 57.3;
+                    if (Math.abs(deltaY) > 5) {
+                        console.log(`[Debug]   Track ${ta.target.name}: Delta Y ${deltaY.toFixed(1)}° (First: ${(first.y*57.3).toFixed(1)}°, Last: ${(last.y*57.3).toFixed(1)}°)`);
+                    }
+                }
+            });
+            container.dispose();
+        };
+
         // Expose for diagnostic analysis
         window.stage = stage;
         window.scene = stage.scene;

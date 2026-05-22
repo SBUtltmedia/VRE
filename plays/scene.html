@@ -35,21 +35,55 @@
   <script type="module">
     BABYLON.TransformNode.prototype.getTotalVertices ??= () => 0;
 
-    // ── Rhubarb phoneme → VRM "aa" expression weight ──────────────────────────
-    const PHON_W = { X:0, B:0, F:.25, H:.35, E:.45, C:.5, D:.65, G:.7, A:.85 };
-
     const speakerEl = document.getElementById('speaker');
     const lineEl    = document.getElementById('line');
     const progEl    = document.getElementById('prog-bar');
     const loadEl    = document.getElementById('loading');
 
-    // ── Asset Resolution ───────────────────────────────────────────────────────
     const resolveAsset = p => (p && !p.startsWith('http')) ? '../' + p : p;
     const resolveVRM = p => {
       if (p.startsWith('http')) return p;
       if (p.startsWith('models/')) return '../' + p;
       return p;
     };
+
+    const ARKIT_MAP = {
+      'jawOpen': 'aa', 'mouthFunnel': 'oh', 'mouthPucker': 'ou',
+      'eyeBlinkLeft': 'blinkLeft', 'eyeBlinkRight': 'blinkRight',
+      'mouthSmileLeft': 'happy', 'mouthSmileRight': 'happy'
+    };
+
+    function evalExprChannel(ch, t) {
+      const { times, weights } = ch;
+      if (t <= times[0]) return weights[0];
+      if (t >= times[times.length - 1]) return weights[weights.length - 1];
+      for (let i = 1; i < times.length; i++) {
+        if (t <= times[i]) {
+          const u = (t - times[i - 1]) / (times[i] - times[i - 1]);
+          return weights[i - 1] * (1 - u) + weights[i] * u;
+        }
+      }
+      return weights[weights.length - 1];
+    }
+
+    async function loadFaceJSON(url) {
+      if (!url || url.endsWith('.vrma') || url.endsWith('.vrm')) return null;
+      try {
+        const r = await fetch(url);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = await r.json();
+        const { names, frames } = data;
+        if (!names?.length || !frames?.length) return null;
+        const times = frames.map(f => f.time);
+        return {
+          names, duration: times[times.length - 1] ?? 0,
+          channels: names.map((name, i) => ({
+            name, times, weights: frames.map(f => f.weights[i] ?? 0)
+          })),
+          startT: null
+        };
+      } catch (e) { return null; }
+    }
 
     // ── Load resources in parallel ─────────────────────────────────────────────
     const [, sceneData] = await Promise.all([
@@ -87,9 +121,7 @@
     fill.groundColor = new BABYLON.Color3(.05, .04, .08);
 
     const camera = new BABYLON.ArcRotateCamera('cam',
-      Math.PI / 2,          
-      Math.PI / 2 - 0.22,   
-      4.2,                  
+      Math.PI / 2, Math.PI / 2 - 0.22, 4.2,
       new BABYLON.Vector3(0, 1.05, 0), scene);
     camera.attachControl(canvas, true);
     camera.lowerRadiusLimit = 1; camera.upperRadiusLimit = 12;
@@ -110,27 +142,29 @@
 
       root.position.set(startPos?.x ?? 0, startPos?.y ?? 0, startPos?.z ?? 0);
 
-      // Find morph-target "aa" expression for lip sync (fallback)
-      const aaMT = findMorphTarget(root, ['aa', 'Fcl_MTH_A', 'mouthOpen', 'A_']);
-      
       const vrmAvatar = new BABYLON.AnimatorAvatar(`avatar-${id}`, root);
 
-      actors[id] = { id, mgr, root, aaMT, vrmAvatar, curGroups: [] };
-    }
-
-    function findMorphTarget(root, candidates) {
+      // Build morph target map (ARKit blendshapes)
+      const morphMap = new Map();
+      const normalize = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
       for (const mesh of root.getChildMeshes(false)) {
         const mtm = mesh.morphTargetManager;
         if (!mtm) continue;
         for (let i = 0; i < mtm.numTargets; i++) {
           const mt = mtm.getTarget(i);
-          if (candidates.some(c => mt.name?.toLowerCase().includes(c.toLowerCase()))) return mt;
+          if (!mt.name) continue;
+          morphMap.set(mt.name.toLowerCase(), mt);
+          morphMap.set(normalize(mt.name), mt);
+          mt.name.split(/[._]/).forEach(p => {
+            if (p) { morphMap.set(p.toLowerCase(), mt); morphMap.set(normalize(p), mt); }
+          });
         }
       }
-      return null;
+
+      actors[id] = { id, mgr, root, vrmAvatar, morphMap, faceAnim: null, curGroups: [] };
     }
 
-    // ── VRMA retarget & play ────────────────────────────────────────────────────
+    // ── VRMA body animation ────────────────────────────────────────────────────
     async function loadAndRetargetVRMA(actor, url, name) {
       const managersBefore = (scene.metadata?.vrmAnimationManagers ?? []).length;
       let container;
@@ -171,20 +205,44 @@
       actor.curGroups = [];
     }
 
-    // ── Lip sync ───────────────────────────────────────────────────────────────
-    let _lipTimers = [];
-    function clearLipSync() { _lipTimers.forEach(clearTimeout); _lipTimers = []; }
-
-    function scheduleLipSync(actor, cues) {
-      clearLipSync();
-      if (!actor.aaMT || !cues?.length) return;
-      for (const cue of cues) {
-        const w = PHON_W[cue.value] ?? 0;
-        _lipTimers.push(setTimeout(() => { actor.aaMT.influence = w; }, cue.start * 1000));
+    // ── Face animation (morph targets from audio2expression JSON) ─────────────
+    function setExpression(actor, name, value) {
+      const targetKey = name.toLowerCase();
+      const normalizedKey = targetKey.replace(/[^a-z0-9]/g, '');
+      let mt = actor.morphMap.get(targetKey) || actor.morphMap.get(normalizedKey);
+      if (!mt) {
+        const mapped = ARKIT_MAP[name];
+        if (mapped) {
+          const mk = mapped.toLowerCase();
+          mt = actor.morphMap.get(mk) || actor.morphMap.get(mk.replace(/[^a-z0-9]/g, ''));
+        }
       }
-      const endT = (cues.at(-1)?.end ?? 0) * 1000 + 100;
-      _lipTimers.push(setTimeout(() => { actor.aaMT.influence = 0; }, endT));
+      if (mt) mt.influence = value;
     }
+
+    function resetFace(actor) {
+      if (!actor?.faceAnim) return;
+      for (const ch of actor.faceAnim.channels) setExpression(actor, ch.name, 0);
+      actor.faceAnim = null;
+    }
+
+    // ── Render-loop face evaluation ───────────────────────────────────────────
+    scene.onBeforeRenderObservable.add(() => {
+      const now = performance.now() / 1000;
+      for (const actor of Object.values(actors)) {
+        const fa = actor.faceAnim;
+        if (!fa?.startT) continue;
+        const t = now - fa.startT;
+        if (t > fa.duration + 0.1) {
+          for (const ch of fa.channels) setExpression(actor, ch.name, 0);
+          actor.faceAnim = null;
+        } else {
+          for (const ch of fa.channels) {
+            setExpression(actor, ch.name, evalExprChannel(ch, t));
+          }
+        }
+      }
+    });
 
     // ── Timeline event player ──────────────────────────────────────────────────
     async function playEvent(event) {
@@ -195,31 +253,31 @@
       lineEl.textContent    = event.description ?? '';
 
       stopActor(actor);
+      resetFace(actor);
 
       const targetX = actor.root.position.x * 0.4;
       camera.setTarget(BABYLON.Vector3.Lerp(camera.target, new BABYLON.Vector3(targetX, 1.05, 0), 0.6));
 
-      const layers = event.layers || {};
-      if (event.clip && !layers.BODY) layers.BODY = event.clip;
-
-      const groups = [];
-      // LOAD SEQUENTIALLY to avoid metadata race conditions
-      for (const [name, url] of Object.entries(layers)) {
-        const g = await loadAndRetargetVRMA(actor, resolveAsset(url), name);
-        if (g) groups.push(g);
+      // Load body VRMA
+      const clipUrl = event.clip || event.layers?.BODY;
+      if (clipUrl) {
+        const g = await loadAndRetargetVRMA(actor, resolveAsset(clipUrl), 'clip');
+        if (g) {
+          actor.curGroups = [g];
+          g.start(false, 1.0, g.from, g.to, false);
+        }
       }
-      actor.curGroups = groups;
 
-      groups.forEach(g => g.start(false, 1.0, g.from, g.to, false));
+      // Load face animation (audio2expression JSON)
+      const faceURL = resolveAsset(event.lipSync || event.layers?.FACE);
+      const fa = await loadFaceJSON(faceURL);
+      if (fa) {
+        fa.startT = performance.now() / 1000;
+        actor.faceAnim = fa;
+      }
 
       if (event.audio) {
         const audio = new Audio(resolveAsset(event.audio));
-        
-        if (event.lipSync && !layers.FACE) {
-          fetch(resolveAsset(event.lipSync)).then(r => r.json()).then(ls => {
-            scheduleLipSync(actor, ls.mouthCues);
-          }).catch(() => {});
-        }
 
         let progObs = scene.onBeforeRenderObservable.add(() => {
           const t = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
@@ -243,8 +301,7 @@
         });
       }
 
-      clearLipSync();
-      if (actor.aaMT) actor.aaMT.influence = 0;
+      resetFace(actor);
       stopActor(actor);
       progEl.style.width = '0%';
     }
