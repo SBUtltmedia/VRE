@@ -128,10 +128,10 @@ export class ChainTimeline {
         const wp = this._getHipsWorldPos();
         if (!wp) return;
         const wrY = this._getHipsWorldRotationY();
-        const totalFrames = animGroup.to - animGroup.from;
+        const totalFrames = this._playTo - this._playFrom;
         const curFrame = animGroup.animatables?.[0]?.masterFrame;
         const progress = (curFrame != null && totalFrames > 0)
-            ? (curFrame - animGroup.from) / totalFrames
+            ? (curFrame - this._playFrom) / totalFrames
             : Math.min(this._animT / this._animDuration, 1);
         window._chainData.push({
             clip: clipName,
@@ -163,7 +163,12 @@ export class ChainTimeline {
         }
 
         const fps = 60;
-        const duration = (animGroup.to - animGroup.from) / (fps * (animGroup.speedRatio || 1));
+        const playFrom = (step.from ?? animGroup.from);
+        const playTo   = (step.to   ?? animGroup.to);
+        const duration = (playTo - playFrom) / (fps * (animGroup.speedRatio || 1));
+        this._playFrom = playFrom;
+        this._playTo   = playTo;
+        console.log(`[Chain] Range: ${playFrom}-${playTo} (${duration.toFixed(2)}s)`);
         document.body.setAttribute("data-duration", duration.toFixed(3));
 
         // Snapshot old bone transforms before new clip starts
@@ -193,7 +198,7 @@ export class ChainTimeline {
         }
 
         animGroup.start(false);
-        animGroup.goToFrame(animGroup.from);
+        animGroup.goToFrame(playFrom);
 
         const hips = this.actor.mgr.humanoidBone["hips"];
         if (hips) hips.computeWorldMatrix(true);
@@ -211,6 +216,30 @@ export class ChainTimeline {
         }
         this.actor.curGroups = [animGroup];
 
+        // Log per-bone rotation deltas at boundary (diagnostic for stutter)
+        if (this.currentIdx > 0 && Object.keys(oldBoneSnapshot).length > 0) {
+            const seen = new Set();
+            const deltas = [];
+            for (const ta of animGroup.targetedAnimations) {
+                const bone = ta.target;
+                if (!bone?.name || seen.has(bone.name)) continue;
+                seen.add(bone.name);
+                const snap = oldBoneSnapshot[bone.name];
+                if (!snap || !bone.rotationQuaternion) continue;
+                const dot = BABYLON.Quaternion.Dot(snap.rot, bone.rotationQuaternion);
+                const angle = 2 * Math.acos(Math.min(1, Math.abs(dot))) * 57.3;
+                if (angle > 5) deltas.push({ bone: bone.name, deg: angle });
+            }
+            deltas.sort((a, b) => b.deg - a.deg);
+            if (deltas.length > 0) {
+                let line = `[Chain] Bone rotation deltas at ${step.name}:`;
+                const top = deltas.slice(0, 5);
+                for (const d of top) line += ` ${d.bone}=${d.deg.toFixed(1)}°`;
+                if (deltas.length > 5) line += ` (+${deltas.length - 5} more)`;
+                console.log(line);
+            }
+        }
+
         // Blend phase: manually crossfade each bone from old snapshot to new animation.
         // NO snapshot during blend — the interpolated body pose is non-deterministic.
         // Only the accumulator-controlled root path is tested via golden data, and that
@@ -224,7 +253,8 @@ export class ChainTimeline {
             const blendEnd = blendStart + blendMs;
             while (performance.now() < blendEnd) {
                 await new Promise(r => requestAnimationFrame(r));
-                const t = Math.min((performance.now() - blendStart) / blendMs, 1);
+                const raw = Math.min((performance.now() - blendStart) / blendMs, 1);
+                const t = raw * raw * (3 - 2 * raw); // smoothstep
                 for (const ta of animGroup.targetedAnimations) {
                     const bone = ta.target;
                     if (!bone?.name) continue;

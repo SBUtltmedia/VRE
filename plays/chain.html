@@ -57,7 +57,8 @@
     const msgEl = document.getElementById("ui-msg");
 
     const stage = new ChainStage("renderCanvas");
-    const chainData = await fetch("chain.json").then(r => r.json());
+    const configUrl = new URLSearchParams(location.search).get("config") || "chain.json";
+    const chainData = await fetch(configUrl).then(r => r.json());
 
     const resolveVRM = p => (p && !p.startsWith("http")) ? "../" + p : p;
 

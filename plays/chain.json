@@ -10,9 +10,9 @@
     "defaultBlend": 200
   },
   "sequence": [
-    { "name": "walk-turn-90-1", "clip": "VRMA/16_19.vrma" },
-    { "name": "walk-turn-90-2", "clip": "VRMA/16_19.vrma", "blend": 550 },
-    { "name": "walk-turn-90-3", "clip": "VRMA/16_19.vrma", "blend": 550 },
-    { "name": "walk-turn-90-4", "clip": "VRMA/16_19.vrma", "blend": 550 }
+    { "name": "walk-turn-90-1", "clip": "VRMA/16_19.vrma", "from": 0 },
+    { "name": "walk-turn-90-2", "clip": "VRMA/16_19.vrma", "from": 62, "blend": 200 },
+    { "name": "walk-turn-90-3", "clip": "VRMA/16_19.vrma", "from": 62, "blend": 200 },
+    { "name": "walk-turn-90-4", "clip": "VRMA/16_19.vrma", "from": 62, "blend": 200 }
   ]
 }

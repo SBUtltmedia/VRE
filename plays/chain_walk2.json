@@ -1,0 +1,16 @@
+{
+  "metadata": {
+    "title": "Walk Cycle 2 Phase Scan",
+    "description": "104_27 RegularWalkRightAngleTurns — finding optimal from offset"
+  },
+  "actor": {
+    "id": "test-character",
+    "vrm": "models/AIAN/AIAN_F_1_Casual.vrm",
+    "startPosition": { "x": 0, "y": 0, "z": 0 },
+    "defaultBlend": 200
+  },
+  "sequence": [
+    { "name": "walk-turn-90-1", "clip": "VRMA/104_27.vrma", "from": 0 },
+    { "name": "walk-turn-90-2", "clip": "VRMA/104_27.vrma", "from": 70, "blend": 200 }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "VRMA/16_19.vrma": {
+    "description": "walk-turn-90-right",
+    "totalFrames": 206,
+    "optimalFrom": 62,
+    "minDelta": 10.7,
+    "minBone": "RightToeBase",
+    "fullRangeDelta": 48.5
+  },
+  "VRMA/104_27.vrma": {
+    "description": "RegularWalkRightAngleTurns",
+    "totalFrames": 1218,
+    "optimalFrom": 70,
+    "minDelta": 6.5,
+    "minBone": "RightArm",
+    "fullRangeDelta": 10.0
+  }
+}

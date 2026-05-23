@@ -1,41 +1,83 @@
 {
-  "matched": 1245,
-  "total": 1363,
-  "missed": 118,
-  "maxErrPos": 0.0462,
-  "maxErrRot": 5.88,
-  "tolerancePos": 0.12,
-  "toleranceRot": 15,
-  "walk-turn-90-1": {
-    "frames": 195,
-    "maxErrPos": 0.0462,
-    "maxErrRot": 5.88,
-    "avgErrPos": 0.0075,
-    "overTolerance": 0,
-    "errors": []
-  },
-  "walk-turn-90-2": {
-    "frames": 321,
-    "maxErrPos": 0.0232,
-    "maxErrRot": 4.43,
-    "avgErrPos": 0.0048,
-    "overTolerance": 0,
-    "errors": []
-  },
-  "walk-turn-90-3": {
-    "frames": 377,
-    "maxErrPos": 0.0241,
-    "maxErrRot": 4.38,
-    "avgErrPos": 0.0068,
-    "overTolerance": 0,
-    "errors": []
-  },
-  "walk-turn-90-4": {
-    "frames": 352,
-    "maxErrPos": 0.0271,
-    "maxErrRot": 2.52,
-    "avgErrPos": 0.0091,
-    "overTolerance": 0,
-    "errors": []
-  }
+  "configPath": "plays/chain.json",
+  "boneThreshold": 45,
+  "maxBoneDeg": 14.9,
+  "worstBone": "RightToeBase at walk-turn-90-3",
+  "boneDeltas": [
+    {
+      "clip": "walk-turn-90-2",
+      "bone": "Hips",
+      "deg": 93.3
+    },
+    {
+      "clip": "walk-turn-90-2",
+      "bone": "RightToeBase",
+      "deg": 10.7
+    },
+    {
+      "clip": "walk-turn-90-2",
+      "bone": "LeftHand",
+      "deg": 9.3
+    },
+    {
+      "clip": "walk-turn-90-2",
+      "bone": "LeftHandIndex1",
+      "deg": 6.4
+    },
+    {
+      "clip": "walk-turn-90-2",
+      "bone": "LeftHandThumb1",
+      "deg": 6.1
+    },
+    {
+      "clip": "walk-turn-90-3",
+      "bone": "Hips",
+      "deg": 93.1
+    },
+    {
+      "clip": "walk-turn-90-3",
+      "bone": "RightToeBase",
+      "deg": 14.9
+    },
+    {
+      "clip": "walk-turn-90-3",
+      "bone": "LeftHand",
+      "deg": 10
+    },
+    {
+      "clip": "walk-turn-90-3",
+      "bone": "LeftHandIndex1",
+      "deg": 6.4
+    },
+    {
+      "clip": "walk-turn-90-3",
+      "bone": "LeftHandThumb1",
+      "deg": 6.1
+    },
+    {
+      "clip": "walk-turn-90-4",
+      "bone": "Hips",
+      "deg": 93.3
+    },
+    {
+      "clip": "walk-turn-90-4",
+      "bone": "RightToeBase",
+      "deg": 10.7
+    },
+    {
+      "clip": "walk-turn-90-4",
+      "bone": "LeftHand",
+      "deg": 9.3
+    },
+    {
+      "clip": "walk-turn-90-4",
+      "bone": "LeftHandIndex1",
+      "deg": 6.4
+    },
+    {
+      "clip": "walk-turn-90-4",
+      "bone": "LeftHandThumb1",
+      "deg": 6.1
+    }
+  ]
 }

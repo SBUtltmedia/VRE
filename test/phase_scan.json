@@ -1,0 +1,1219 @@
+{
+  "oldFrom": 0,
+  "oldTo": 1217.9988098144531,
+  "scanRange": 200,
+  "offsets": [
+    {
+      "offset": 0,
+      "candidateFrom": 0,
+      "deg": 10,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 1,
+      "candidateFrom": 1,
+      "deg": 10,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 2,
+      "candidateFrom": 2,
+      "deg": 10,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 3,
+      "candidateFrom": 3,
+      "deg": 10,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 4,
+      "candidateFrom": 4,
+      "deg": 10,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 5,
+      "candidateFrom": 5,
+      "deg": 10,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 6,
+      "candidateFrom": 6,
+      "deg": 10,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 7,
+      "candidateFrom": 7,
+      "deg": 10,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 8,
+      "candidateFrom": 8,
+      "deg": 10,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 9,
+      "candidateFrom": 9,
+      "deg": 9.9,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 10,
+      "candidateFrom": 10,
+      "deg": 9.9,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 11,
+      "candidateFrom": 11,
+      "deg": 9.8,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 12,
+      "candidateFrom": 12,
+      "deg": 9.7,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 13,
+      "candidateFrom": 13,
+      "deg": 9.6,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 14,
+      "candidateFrom": 14,
+      "deg": 9.6,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 15,
+      "candidateFrom": 15,
+      "deg": 9.6,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 16,
+      "candidateFrom": 16,
+      "deg": 9.7,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 17,
+      "candidateFrom": 17,
+      "deg": 9.6,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 18,
+      "candidateFrom": 18,
+      "deg": 9.6,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 19,
+      "candidateFrom": 19,
+      "deg": 9.6,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 20,
+      "candidateFrom": 20,
+      "deg": 9.5,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 21,
+      "candidateFrom": 21,
+      "deg": 9.6,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 22,
+      "candidateFrom": 22,
+      "deg": 9.7,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 23,
+      "candidateFrom": 23,
+      "deg": 9.8,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 24,
+      "candidateFrom": 24,
+      "deg": 9.8,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 25,
+      "candidateFrom": 25,
+      "deg": 9.9,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 26,
+      "candidateFrom": 26,
+      "deg": 9.9,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 27,
+      "candidateFrom": 27,
+      "deg": 9.9,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 28,
+      "candidateFrom": 28,
+      "deg": 9.9,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 29,
+      "candidateFrom": 29,
+      "deg": 10,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 30,
+      "candidateFrom": 30,
+      "deg": 10.1,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 31,
+      "candidateFrom": 31,
+      "deg": 10.1,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 32,
+      "candidateFrom": 32,
+      "deg": 10.1,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 33,
+      "candidateFrom": 33,
+      "deg": 10,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 34,
+      "candidateFrom": 34,
+      "deg": 10,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 35,
+      "candidateFrom": 35,
+      "deg": 9.9,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 36,
+      "candidateFrom": 36,
+      "deg": 9.8,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 37,
+      "candidateFrom": 37,
+      "deg": 9.9,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 38,
+      "candidateFrom": 38,
+      "deg": 10,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 39,
+      "candidateFrom": 39,
+      "deg": 10,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 40,
+      "candidateFrom": 40,
+      "deg": 10,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 41,
+      "candidateFrom": 41,
+      "deg": 9.9,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 42,
+      "candidateFrom": 42,
+      "deg": 9.8,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 43,
+      "candidateFrom": 43,
+      "deg": 9.7,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 44,
+      "candidateFrom": 44,
+      "deg": 9.6,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 45,
+      "candidateFrom": 45,
+      "deg": 9.6,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 46,
+      "candidateFrom": 46,
+      "deg": 9.5,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 47,
+      "candidateFrom": 47,
+      "deg": 9.5,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 48,
+      "candidateFrom": 48,
+      "deg": 9.5,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 49,
+      "candidateFrom": 49,
+      "deg": 9.5,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 50,
+      "candidateFrom": 50,
+      "deg": 9.6,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 51,
+      "candidateFrom": 51,
+      "deg": 9.6,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 52,
+      "candidateFrom": 52,
+      "deg": 9.6,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 53,
+      "candidateFrom": 53,
+      "deg": 9.5,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 54,
+      "candidateFrom": 54,
+      "deg": 9.3,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 55,
+      "candidateFrom": 55,
+      "deg": 9.5,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 56,
+      "candidateFrom": 56,
+      "deg": 9.6,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 57,
+      "candidateFrom": 57,
+      "deg": 9.7,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 58,
+      "candidateFrom": 58,
+      "deg": 9.7,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 59,
+      "candidateFrom": 59,
+      "deg": 9.4,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 60,
+      "candidateFrom": 60,
+      "deg": 9.1,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 61,
+      "candidateFrom": 61,
+      "deg": 9.1,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 62,
+      "candidateFrom": 62,
+      "deg": 9.1,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 63,
+      "candidateFrom": 63,
+      "deg": 8.9,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 64,
+      "candidateFrom": 64,
+      "deg": 8.7,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 65,
+      "candidateFrom": 65,
+      "deg": 8.7,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 66,
+      "candidateFrom": 66,
+      "deg": 8.7,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 67,
+      "candidateFrom": 67,
+      "deg": 8.4,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 68,
+      "candidateFrom": 68,
+      "deg": 8,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 69,
+      "candidateFrom": 69,
+      "deg": 7.2,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 70,
+      "candidateFrom": 70,
+      "deg": 6.5,
+      "bone": "RightArm"
+    },
+    {
+      "offset": 71,
+      "candidateFrom": 71,
+      "deg": 6.9,
+      "bone": "RightHand"
+    },
+    {
+      "offset": 72,
+      "candidateFrom": 72,
+      "deg": 7.4,
+      "bone": "RightHand"
+    },
+    {
+      "offset": 73,
+      "candidateFrom": 73,
+      "deg": 7.3,
+      "bone": "RightHand"
+    },
+    {
+      "offset": 74,
+      "candidateFrom": 74,
+      "deg": 7.7,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 75,
+      "candidateFrom": 75,
+      "deg": 8.3,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 76,
+      "candidateFrom": 76,
+      "deg": 9,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 77,
+      "candidateFrom": 77,
+      "deg": 9.6,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 78,
+      "candidateFrom": 78,
+      "deg": 10.2,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 79,
+      "candidateFrom": 79,
+      "deg": 10.7,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 80,
+      "candidateFrom": 80,
+      "deg": 11.9,
+      "bone": "RightUpLeg"
+    },
+    {
+      "offset": 81,
+      "candidateFrom": 81,
+      "deg": 13.4,
+      "bone": "RightUpLeg"
+    },
+    {
+      "offset": 82,
+      "candidateFrom": 82,
+      "deg": 14.8,
+      "bone": "RightUpLeg"
+    },
+    {
+      "offset": 83,
+      "candidateFrom": 83,
+      "deg": 15.4,
+      "bone": "RightUpLeg"
+    },
+    {
+      "offset": 84,
+      "candidateFrom": 84,
+      "deg": 15.9,
+      "bone": "RightUpLeg"
+    },
+    {
+      "offset": 85,
+      "candidateFrom": 85,
+      "deg": 16,
+      "bone": "RightUpLeg"
+    },
+    {
+      "offset": 86,
+      "candidateFrom": 86,
+      "deg": 16,
+      "bone": "RightUpLeg"
+    },
+    {
+      "offset": 87,
+      "candidateFrom": 87,
+      "deg": 16,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 88,
+      "candidateFrom": 88,
+      "deg": 17.1,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 89,
+      "candidateFrom": 89,
+      "deg": 18.9,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 90,
+      "candidateFrom": 90,
+      "deg": 20.7,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 91,
+      "candidateFrom": 91,
+      "deg": 22,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 92,
+      "candidateFrom": 92,
+      "deg": 23.3,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 93,
+      "candidateFrom": 93,
+      "deg": 26.9,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 94,
+      "candidateFrom": 94,
+      "deg": 30.4,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 95,
+      "candidateFrom": 95,
+      "deg": 28.8,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 96,
+      "candidateFrom": 96,
+      "deg": 27.1,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 97,
+      "candidateFrom": 97,
+      "deg": 27.6,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 98,
+      "candidateFrom": 98,
+      "deg": 28,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 99,
+      "candidateFrom": 99,
+      "deg": 28.5,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 100,
+      "candidateFrom": 100,
+      "deg": 28.9,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 101,
+      "candidateFrom": 101,
+      "deg": 30.3,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 102,
+      "candidateFrom": 102,
+      "deg": 31.7,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 103,
+      "candidateFrom": 103,
+      "deg": 32.7,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 104,
+      "candidateFrom": 104,
+      "deg": 33.8,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 105,
+      "candidateFrom": 105,
+      "deg": 34.2,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 106,
+      "candidateFrom": 106,
+      "deg": 34.5,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 107,
+      "candidateFrom": 107,
+      "deg": 35.6,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 108,
+      "candidateFrom": 108,
+      "deg": 36.8,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 109,
+      "candidateFrom": 109,
+      "deg": 37.6,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 110,
+      "candidateFrom": 110,
+      "deg": 38.5,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 111,
+      "candidateFrom": 111,
+      "deg": 39.3,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 112,
+      "candidateFrom": 112,
+      "deg": 40,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 113,
+      "candidateFrom": 113,
+      "deg": 39.8,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 114,
+      "candidateFrom": 114,
+      "deg": 39.7,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 115,
+      "candidateFrom": 115,
+      "deg": 39.3,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 116,
+      "candidateFrom": 116,
+      "deg": 38.9,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 117,
+      "candidateFrom": 117,
+      "deg": 38.2,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 118,
+      "candidateFrom": 118,
+      "deg": 37.5,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 119,
+      "candidateFrom": 119,
+      "deg": 36.5,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 120,
+      "candidateFrom": 120,
+      "deg": 35.6,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 121,
+      "candidateFrom": 121,
+      "deg": 33.2,
+      "bone": "LeftFoot"
+    },
+    {
+      "offset": 122,
+      "candidateFrom": 122,
+      "deg": 33.5,
+      "bone": "LeftLeg"
+    },
+    {
+      "offset": 123,
+      "candidateFrom": 123,
+      "deg": 37,
+      "bone": "LeftLeg"
+    },
+    {
+      "offset": 124,
+      "candidateFrom": 124,
+      "deg": 40.5,
+      "bone": "LeftLeg"
+    },
+    {
+      "offset": 125,
+      "candidateFrom": 125,
+      "deg": 43.2,
+      "bone": "LeftLeg"
+    },
+    {
+      "offset": 126,
+      "candidateFrom": 126,
+      "deg": 46,
+      "bone": "LeftLeg"
+    },
+    {
+      "offset": 127,
+      "candidateFrom": 127,
+      "deg": 48.5,
+      "bone": "LeftLeg"
+    },
+    {
+      "offset": 128,
+      "candidateFrom": 128,
+      "deg": 51,
+      "bone": "LeftLeg"
+    },
+    {
+      "offset": 129,
+      "candidateFrom": 129,
+      "deg": 52.7,
+      "bone": "LeftLeg"
+    },
+    {
+      "offset": 130,
+      "candidateFrom": 130,
+      "deg": 54.5,
+      "bone": "LeftLeg"
+    },
+    {
+      "offset": 131,
+      "candidateFrom": 131,
+      "deg": 55.5,
+      "bone": "LeftLeg"
+    },
+    {
+      "offset": 132,
+      "candidateFrom": 132,
+      "deg": 56.4,
+      "bone": "LeftLeg"
+    },
+    {
+      "offset": 133,
+      "candidateFrom": 133,
+      "deg": 56.2,
+      "bone": "LeftLeg"
+    },
+    {
+      "offset": 134,
+      "candidateFrom": 134,
+      "deg": 56,
+      "bone": "LeftLeg"
+    },
+    {
+      "offset": 135,
+      "candidateFrom": 135,
+      "deg": 54.7,
+      "bone": "LeftLeg"
+    },
+    {
+      "offset": 136,
+      "candidateFrom": 136,
+      "deg": 53.4,
+      "bone": "LeftLeg"
+    },
+    {
+      "offset": 137,
+      "candidateFrom": 137,
+      "deg": 51,
+      "bone": "LeftLeg"
+    },
+    {
+      "offset": 138,
+      "candidateFrom": 138,
+      "deg": 48.6,
+      "bone": "LeftLeg"
+    },
+    {
+      "offset": 139,
+      "candidateFrom": 139,
+      "deg": 45.2,
+      "bone": "LeftLeg"
+    },
+    {
+      "offset": 140,
+      "candidateFrom": 140,
+      "deg": 41.8,
+      "bone": "LeftLeg"
+    },
+    {
+      "offset": 141,
+      "candidateFrom": 141,
+      "deg": 37.8,
+      "bone": "LeftLeg"
+    },
+    {
+      "offset": 142,
+      "candidateFrom": 142,
+      "deg": 36.5,
+      "bone": "LeftUpLeg"
+    },
+    {
+      "offset": 143,
+      "candidateFrom": 143,
+      "deg": 36.6,
+      "bone": "LeftUpLeg"
+    },
+    {
+      "offset": 144,
+      "candidateFrom": 144,
+      "deg": 36.7,
+      "bone": "LeftUpLeg"
+    },
+    {
+      "offset": 145,
+      "candidateFrom": 145,
+      "deg": 36.3,
+      "bone": "LeftUpLeg"
+    },
+    {
+      "offset": 146,
+      "candidateFrom": 146,
+      "deg": 35.8,
+      "bone": "LeftUpLeg"
+    },
+    {
+      "offset": 147,
+      "candidateFrom": 147,
+      "deg": 36.9,
+      "bone": "LeftUpLeg"
+    },
+    {
+      "offset": 148,
+      "candidateFrom": 148,
+      "deg": 38,
+      "bone": "LeftUpLeg"
+    },
+    {
+      "offset": 149,
+      "candidateFrom": 149,
+      "deg": 38.5,
+      "bone": "LeftUpLeg"
+    },
+    {
+      "offset": 150,
+      "candidateFrom": 150,
+      "deg": 39,
+      "bone": "LeftUpLeg"
+    },
+    {
+      "offset": 151,
+      "candidateFrom": 151,
+      "deg": 38.5,
+      "bone": "LeftUpLeg"
+    },
+    {
+      "offset": 152,
+      "candidateFrom": 152,
+      "deg": 38,
+      "bone": "LeftUpLeg"
+    },
+    {
+      "offset": 153,
+      "candidateFrom": 153,
+      "deg": 40.8,
+      "bone": "RightToeBase"
+    },
+    {
+      "offset": 154,
+      "candidateFrom": 154,
+      "deg": 44.2,
+      "bone": "RightToeBase"
+    },
+    {
+      "offset": 155,
+      "candidateFrom": 155,
+      "deg": 42.6,
+      "bone": "RightToeBase"
+    },
+    {
+      "offset": 156,
+      "candidateFrom": 156,
+      "deg": 41,
+      "bone": "RightToeBase"
+    },
+    {
+      "offset": 157,
+      "candidateFrom": 157,
+      "deg": 36.4,
+      "bone": "RightToeBase"
+    },
+    {
+      "offset": 158,
+      "candidateFrom": 158,
+      "deg": 31.8,
+      "bone": "RightToeBase"
+    },
+    {
+      "offset": 159,
+      "candidateFrom": 159,
+      "deg": 32.9,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 160,
+      "candidateFrom": 160,
+      "deg": 38.1,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 161,
+      "candidateFrom": 161,
+      "deg": 42.6,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 162,
+      "candidateFrom": 162,
+      "deg": 47.1,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 163,
+      "candidateFrom": 163,
+      "deg": 51.2,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 164,
+      "candidateFrom": 164,
+      "deg": 55.2,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 165,
+      "candidateFrom": 165,
+      "deg": 57.9,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 166,
+      "candidateFrom": 166,
+      "deg": 60.6,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 167,
+      "candidateFrom": 167,
+      "deg": 61.8,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 168,
+      "candidateFrom": 168,
+      "deg": 63,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 169,
+      "candidateFrom": 169,
+      "deg": 62.8,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 170,
+      "candidateFrom": 170,
+      "deg": 62.5,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 171,
+      "candidateFrom": 171,
+      "deg": 61.1,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 172,
+      "candidateFrom": 172,
+      "deg": 59.6,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 173,
+      "candidateFrom": 173,
+      "deg": 56.9,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 174,
+      "candidateFrom": 174,
+      "deg": 54.3,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 175,
+      "candidateFrom": 175,
+      "deg": 50.5,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 176,
+      "candidateFrom": 176,
+      "deg": 46.8,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 177,
+      "candidateFrom": 177,
+      "deg": 41.7,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 178,
+      "candidateFrom": 178,
+      "deg": 36.6,
+      "bone": "RightLeg"
+    },
+    {
+      "offset": 179,
+      "candidateFrom": 179,
+      "deg": 33.9,
+      "bone": "RightUpLeg"
+    },
+    {
+      "offset": 180,
+      "candidateFrom": 180,
+      "deg": 34,
+      "bone": "RightUpLeg"
+    },
+    {
+      "offset": 181,
+      "candidateFrom": 181,
+      "deg": 33.8,
+      "bone": "RightUpLeg"
+    },
+    {
+      "offset": 182,
+      "candidateFrom": 182,
+      "deg": 33.5,
+      "bone": "RightUpLeg"
+    },
+    {
+      "offset": 183,
+      "candidateFrom": 183,
+      "deg": 33.7,
+      "bone": "RightUpLeg"
+    },
+    {
+      "offset": 184,
+      "candidateFrom": 184,
+      "deg": 33.9,
+      "bone": "RightUpLeg"
+    },
+    {
+      "offset": 185,
+      "candidateFrom": 185,
+      "deg": 34.6,
+      "bone": "RightUpLeg"
+    },
+    {
+      "offset": 186,
+      "candidateFrom": 186,
+      "deg": 35.2,
+      "bone": "RightUpLeg"
+    },
+    {
+      "offset": 187,
+      "candidateFrom": 187,
+      "deg": 35.5,
+      "bone": "RightUpLeg"
+    },
+    {
+      "offset": 188,
+      "candidateFrom": 188,
+      "deg": 35.9,
+      "bone": "RightUpLeg"
+    },
+    {
+      "offset": 189,
+      "candidateFrom": 189,
+      "deg": 36.8,
+      "bone": "RightUpLeg"
+    },
+    {
+      "offset": 190,
+      "candidateFrom": 190,
+      "deg": 37.7,
+      "bone": "RightUpLeg"
+    },
+    {
+      "offset": 191,
+      "candidateFrom": 191,
+      "deg": 38,
+      "bone": "RightUpLeg"
+    },
+    {
+      "offset": 192,
+      "candidateFrom": 192,
+      "deg": 38.2,
+      "bone": "RightUpLeg"
+    },
+    {
+      "offset": 193,
+      "candidateFrom": 193,
+      "deg": 36.9,
+      "bone": "RightUpLeg"
+    },
+    {
+      "offset": 194,
+      "candidateFrom": 194,
+      "deg": 35.6,
+      "bone": "RightUpLeg"
+    },
+    {
+      "offset": 195,
+      "candidateFrom": 195,
+      "deg": 33.9,
+      "bone": "RightUpLeg"
+    },
+    {
+      "offset": 196,
+      "candidateFrom": 196,
+      "deg": 32.3,
+      "bone": "RightUpLeg"
+    },
+    {
+      "offset": 197,
+      "candidateFrom": 197,
+      "deg": 32.3,
+      "bone": "LeftLeg"
+    },
+    {
+      "offset": 198,
+      "candidateFrom": 198,
+      "deg": 37.1,
+      "bone": "LeftLeg"
+    },
+    {
+      "offset": 199,
+      "candidateFrom": 199,
+      "deg": 42,
+      "bone": "LeftLeg"
+    },
+    {
+      "offset": 200,
+      "candidateFrom": 200,
+      "deg": 46.8,
+      "bone": "LeftLeg"
+    }
+  ],
+  "best": {
+    "offset": 70,
+    "candidateFrom": 70,
+    "deg": 6.5,
+    "bone": "RightArm"
+  }
+}

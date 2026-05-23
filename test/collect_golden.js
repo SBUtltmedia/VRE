@@ -2,8 +2,13 @@ const puppeteer = require("puppeteer");
 const path = require("path");
 const fs = require("fs");
 
+const configPath = process.argv.includes("--config")
+    ? process.argv[process.argv.indexOf("--config") + 1]
+    : "plays/chain.json";
+
 (async () => {
-    const url = "file:///" + path.resolve("plays/chain.html").replace(/\\/g, "/");
+    const relConfig = path.relative("plays", configPath).replace(/\\/g, "/");
+    const url = "file:///" + path.resolve("plays/chain.html").replace(/\\/g, "/") + `?config=${relConfig}`;
     const browser = await puppeteer.launch({
         headless: true,
         args: ["--no-sandbox", "--disable-web-security", "--allow-file-access-from-files"],
@@ -22,7 +27,8 @@ const fs = require("fs");
     );
 
     const chainData = await page.evaluate(() => window._chainData);
-    const outPath = path.resolve("plays/chain_golden.json");
+    const base = path.basename(configPath, path.extname(configPath));
+    const outPath = path.resolve(`plays/${base}_golden.json`);
     fs.writeFileSync(outPath, JSON.stringify(chainData, null, 2));
     console.log(`Saved ${chainData.length} frames to ${outPath}`);
 
