@@ -1,0 +1,41 @@
+{
+  "matched": 1245,
+  "total": 1363,
+  "missed": 118,
+  "maxErrPos": 0.0462,
+  "maxErrRot": 5.88,
+  "tolerancePos": 0.12,
+  "toleranceRot": 15,
+  "walk-turn-90-1": {
+    "frames": 195,
+    "maxErrPos": 0.0462,
+    "maxErrRot": 5.88,
+    "avgErrPos": 0.0075,
+    "overTolerance": 0,
+    "errors": []
+  },
+  "walk-turn-90-2": {
+    "frames": 321,
+    "maxErrPos": 0.0232,
+    "maxErrRot": 4.43,
+    "avgErrPos": 0.0048,
+    "overTolerance": 0,
+    "errors": []
+  },
+  "walk-turn-90-3": {
+    "frames": 377,
+    "maxErrPos": 0.0241,
+    "maxErrRot": 4.38,
+    "avgErrPos": 0.0068,
+    "overTolerance": 0,
+    "errors": []
+  },
+  "walk-turn-90-4": {
+    "frames": 352,
+    "maxErrPos": 0.0271,
+    "maxErrRot": 2.52,
+    "avgErrPos": 0.0091,
+    "overTolerance": 0,
+    "errors": []
+  }
+}

@@ -61,7 +61,7 @@ async function runTest() {
     await page.click('body');
 
     const clipData = [];
-    let lastKey = null;
+    let lastClipName = null;
     let totalAnimDuration = 0;
 
     console.log('Monitoring clip transitions...\n');
@@ -83,39 +83,22 @@ async function runTest() {
                         rot = { x: 0, y: parts[3], z: 0 };
                     }
                 }
-                
-                if (!pos && window.character && window.character.root) {
-                    const p = window.character.root.position;
-                    pos = { x: p.x, y: p.y, z: p.z };
-                }
-                if (!rot && window.character && window.character.root) {
-                    const r = window.character.root.rotation;
-                    rot = { x: r.x, y: r.y, z: r.z };
-                }
                 return { frame, clip, status, duration, pos, rot };
             });
 
             if (!result.clip) return;
 
-            // Log changes
-            const changeKey = `${result.clip}:${result.frame}`;
-            if (changeKey !== lastKey) {
-                const posStr = result.pos
-                    ? `pos(${result.pos.x.toFixed(3)}, ${result.pos.y.toFixed(3)}, ${result.pos.z.toFixed(3)})`
-                    : 'pos(null)';
-                const rotStr = result.rot
-                    ? `rotY(${(result.rot.y * 57.3).toFixed(1)}°)`
-                    : 'rotY(null)';
-                console.log(`  Clip "${result.clip}" ${result.frame} — ${posStr} ${rotStr}`);
-
-                clipData.push({
-                    frame: result.frame,
-                    clip: result.clip,
-                    pos: result.pos,
-                    rot: result.rot,
-                });
-
-                lastKey = changeKey;
+            // Track start-of-clip positions for path distance
+            if (result.frame === 'start' && result.clip !== lastClipName) {
+                lastClipName = result.clip;
+                if (result.pos) {
+                    clipData.push({
+                        frame: 'start',
+                        clip: result.clip,
+                        pos: { ...result.pos },
+                        rot: result.rot ? { ...result.rot } : null,
+                    });
+                }
             }
 
             if (result.status === 'complete') {
@@ -124,7 +107,6 @@ async function runTest() {
         } catch (e) {}
     }, 100);
 
-    // Compute a reasonable timeout: total animation + 20s overhead per clip
     const timeoutMs = 90000;
 
     try {
@@ -157,29 +139,55 @@ async function runTest() {
 
     await browser.close();
 
-    // Analyze results
+    // Analyze results using console logs (event-driven, no delay needed)
     console.log('\n=== Results ===\n');
 
-    const endPositions = [];
-    // Use only explicitly captured "end" frames (chain publishes these with a 200ms delay for reliable polling)
-    for (let i = 0; i < clipData.length; i++) {
-        if (clipData[i].frame === 'end' && clipData[i].pos) {
-            endPositions.push({
-                clip: clipData[i].clip,
-                x: clipData[i].pos.x,
-                y: clipData[i].pos.y,
-                z: clipData[i].pos.z,
-                rotY: clipData[i].rot ? clipData[i].rot.y : 0,
+    // Parse console logs for continuity validation
+    // Format: [Chain] World start: pos(-0.193, -2.840) rotY(-0.0°)
+    //         [Chain] World end:   pos(1.009, -0.916) rotY(94.2°)
+    const logEntries = [];
+    for (const log of consoleLogs) {
+        const worldMatch = log.match(/World (start|end):\s+pos\(([^,]+), ([^)]+)\)\s+rotY\(([^)]+)\)/);
+        if (worldMatch) {
+            logEntries.push({
+                type: worldMatch[1],
+                x: parseFloat(worldMatch[2]),
+                z: parseFloat(worldMatch[3]),
+                rotY: parseFloat(worldMatch[4]),
             });
         }
     }
 
-    console.log('Clip end positions (Hips world position at end of each clip):');
-    endPositions.forEach((p, i) => {
+    // Clip end positions from log entries
+    const logEndPositions = logEntries.filter(e => e.type === 'end').map((e, i) => ({
+        clip: `walk-turn-90-${i + 1}`,
+        x: e.x,
+        y: 0,
+        z: e.z,
+        rotY: e.rotY,
+    }));
+
+    console.log('Clip end positions (Hips world position at end of each clip, from console logs):');
+    logEndPositions.forEach((p, i) => {
+        // rotY from console logs is already in degrees (the log converts radians * 57.3)
+        console.log(`  ${i + 1}. ${p.clip}: (${p.x.toFixed(3)}, ${p.y.toFixed(3)}, ${p.z.toFixed(3)}) rotY=${p.rotY.toFixed(1)}°`);
+    });
+
+    // Clip start positions from clipData (DOM polling, best-effort)
+    const startPositions = clipData.filter(d => d.frame === 'start').map(d => ({
+        clip: d.clip,
+        x: d.pos.x,
+        y: d.pos.y,
+        z: d.pos.z,
+        rotY: d.rot ? d.rot.y : 0,
+    }));
+
+    console.log('Clip start positions (from DOM polling):');
+    startPositions.forEach((p, i) => {
         console.log(`  ${i + 1}. ${p.clip}: (${p.x.toFixed(3)}, ${p.y.toFixed(3)}, ${p.z.toFixed(3)}) rotY=${(p.rotY * 57.3).toFixed(1)}°`);
     });
 
-    console.log(`\nFinal root position: (${finalState.pos?.x.toFixed(3)}, ${finalState.pos?.y.toFixed(3)}, ${finalState.pos?.z.toFixed(3)})`);
+    console.log(`\nFinal Hips world position: (${finalState.pos?.x.toFixed(3)}, ${finalState.pos?.y.toFixed(3)}, ${finalState.pos?.z.toFixed(3)})`);
     console.log(`Final root rotation: rotY=${(finalState.rot?.y * 57.3).toFixed(1)}°`);
 
     const finalPos = finalState.pos;
@@ -190,16 +198,16 @@ async function runTest() {
         process.exit(1);
     }
 
-    const clipsPlayed = endPositions.length;
+    const clipsPlayed = startPositions.length;
     const totalDispX = finalPos.x;
     const totalDispZ = finalPos.z;
     const totalDisp = Math.sqrt(totalDispX * totalDispX + totalDispZ * totalDispZ);
     const totalRotY = finalRot ? finalRot.y * 57.3 : 0;
 
-    // Calculate cumulative path distance (sum of segment lengths)
+    // Calculate cumulative path distance from start positions
     let totalPathDistance = 0;
     let prevPos = { x: 0, y: 0, z: 0 };
-    endPositions.forEach(p => {
+    startPositions.forEach(p => {
         const dx = p.x - prevPos.x;
         const dz = p.z - prevPos.z;
         totalPathDistance += Math.sqrt(dx * dx + dz * dz);
@@ -212,33 +220,23 @@ async function runTest() {
     console.log(`  Final net disp:      ${totalDisp.toFixed(3)} units (distance from start)`);
     console.log(`  Final Y rotation:    ${totalRotY.toFixed(1)}°`);
 
-    // Validate continuity across clip boundaries (teleport detection)
-    // Match each clip's "end" entry with the following clip's first "start" entry
+    // Validate continuity from console log entries (event-driven, reliable)
     const continuityErrors = [];
-    for (let i = 0; i < clipData.length; i++) {
-        if (clipData[i].frame !== 'end') continue;
-        // Find the first "start" for a different clip after this "end"
-        for (let j = i + 1; j < clipData.length; j++) {
-            if (clipData[j].frame === 'start' && clipData[j].clip !== clipData[i].clip) {
-                const cur = clipData[i];
-                const next = clipData[j];
-                if (cur.pos && next.pos) {
-                    const dx = Math.abs(next.pos.x - cur.pos.x);
-                    const dz = Math.abs(next.pos.z - cur.pos.z);
-                    
-                    // Check rotation continuity (normalize to -180 to 180)
-                    let dr = (next.rot.y - cur.rot.y) * 57.3;
-                    while (dr < -180) dr += 360;
-                    while (dr > 180) dr -= 360;
-                    dr = Math.abs(dr);
+    for (let i = 0; i < logEntries.length - 1; i += 2) {
+        if (logEntries[i].type === 'end' && logEntries[i + 1]?.type === 'start') {
+            const cur = logEntries[i];
+            const next = logEntries[i + 1];
+            const dx = Math.abs(next.x - cur.x);
+            const dz = Math.abs(next.z - cur.z);
+            let dr = next.rotY - cur.rotY;
+            while (dr < -180) dr += 360;
+            while (dr > 180) dr -= 360;
+            dr = Math.abs(dr);
 
-                    if (dx > 0.02 || dz > 0.02 || dr > 1.0) {
-                        continuityErrors.push(
-                            `Boundary ${cur.clip}→${next.clip}: world X ${cur.pos.x.toFixed(3)}→${next.pos.x.toFixed(3)} (Δ${dx.toFixed(3)}), Z ${cur.pos.z.toFixed(3)}→${next.pos.z.toFixed(3)} (Δ${dz.toFixed(3)}), RotY ${(cur.rot.y * 57.3).toFixed(1)}°→${(next.rot.y * 57.3).toFixed(1)}° (Δ${dr.toFixed(1)}°)`
-                        );
-                    }
-                }
-                break;
+            if (dx > 0.02 || dz > 0.02 || dr > 1.0) {
+                continuityErrors.push(
+                    `Boundary clip ${Math.floor(i/2)+1}→${Math.floor(i/2)+2}: X ${cur.x.toFixed(3)}→${next.x.toFixed(3)} (Δ${dx.toFixed(3)}), Z ${cur.z.toFixed(3)}→${next.z.toFixed(3)} (Δ${dz.toFixed(3)}), RotY ${(cur.rotY).toFixed(1)}°→${(next.rotY).toFixed(1)}° (Δ${dr.toFixed(1)}°)`
+                );
             }
         }
     }

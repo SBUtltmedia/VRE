@@ -22,15 +22,25 @@
       pointer-events: none;
     }
     .val { color: #fff; font-weight: bold; }
+    #help {
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+      color: rgba(255,255,255,0.4); font: 12px monospace;
+      background: rgba(0,0,0,0.4); padding: 8px 16px;
+      border-radius: 6px; pointer-events: none;
+      user-select: none;
+    }
   </style>
 </head>
 <body data-status="loading">
 
   <canvas id="renderCanvas"></canvas>
 
+  <div id="help">WASD move · Q/E up/down · Mouse orbit · Scroll zoom · R reset view</div>
+
   <div id="overlay">
     <div>Clip: <span id="ui-clip" class="val">-</span></div>
     <div>Pos: <span id="ui-pos" class="val">0, 0, 0</span></div>
+    <div>Cam: <span id="ui-cam" class="val">0, 0</span></div>
     <div id="ui-msg" style="margin-top:10px; opacity:0.6;">Initializing...</div>
   </div>
 
@@ -43,6 +53,7 @@
 
     const clipEl = document.getElementById("ui-clip");
     const posEl = document.getElementById("ui-pos");
+    const camEl = document.getElementById("ui-cam");
     const msgEl = document.getElementById("ui-msg");
 
     const stage = new ChainStage("renderCanvas");
@@ -67,7 +78,7 @@
         }
 
         const character = new Character(def.id, root, mgr);
-        const timeline = new ChainTimeline(stage, character);
+        const timeline = new ChainTimeline(stage, character, def);
 
         // Debug: Granular VRMA track inspection
         window.inspectVRMA = async (url) => {
@@ -103,8 +114,10 @@
 
             // Update UI loop
             stage.scene.onBeforeRenderObservable.add(() => {
+                stage.moveSpeed(stage.engine.getDeltaTime() / 1000);
                 const pos = character.root.position;
                 posEl.textContent = `${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)}`;
+                camEl.textContent = `${(stage.camera.alpha * 57.3).toFixed(0)}°, ${(stage.camera.beta * 57.3).toFixed(0)}°`;
                 clipEl.textContent = document.body.getAttribute("data-current") || "-";
             });
         }, { once: true });

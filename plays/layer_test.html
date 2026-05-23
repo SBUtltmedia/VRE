@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Animation Layer Test</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <link rel="icon" href="data:,">
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
+  <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+  <script>
+    window.LOADERS = BABYLON;
+    window.BABYLON = BABYLON;
+  </script>
+  <script src="https://xuhuisheng.github.io/babylonjs-vrm/babylon-vrm-loader.js"></script>
+
+  <style>
+    html, body, #renderCanvas { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #05050a; }
+    #overlay {
+      position: absolute; top: 20px; left: 20px; right: 260px;
+      color: #aef; font: 13px monospace; background: rgba(0,0,0,0.6);
+      padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+      pointer-events: none;
+    }
+    #panel {
+      position: absolute; top: 20px; right: 20px; width: 230px;
+      color: #aef; font: 13px monospace; background: rgba(0,0,0,0.7);
+      padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+    }
+    #panel select, #panel button {
+      width: 100%; margin: 4px 0; padding: 6px 8px;
+      font: 13px monospace; background: rgba(255,255,255,0.1);
+      color: #aef; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px;
+      cursor: pointer; pointer-events: all;
+    }
+    #panel button:hover { background: rgba(255,255,255,0.2); }
+    #panel label { display: block; margin-top: 8px; opacity: 0.7; font-size: 11px; }
+    #track-info {
+      margin-top: 6px; font-size: 11px; line-height: 1.4; max-height: 200px; overflow-y: auto;
+    }
+    .val { color: #fff; font-weight: bold; }
+    .good { color: #8f8; }
+    .dim { opacity: 0.5; }
+  </style>
+</head>
+<body>
+
+  <canvas id="renderCanvas"></canvas>
+
+  <div id="overlay">
+    <div>Model: <span id="ui-model" class="val">-</span></div>
+    <div>Idle: <span id="ui-idle" class="val">-</span></div>
+    <div>Layer: <span id="ui-layer" class="val">none</span></div>
+    <div>Pos: <span id="ui-pos" class="val">0, 0, 0</span></div>
+  </div>
+
+  <div id="panel">
+    <div style="margin-bottom:8px;font-weight:bold;">Gesture Layer Test</div>
+
+    <label>Gesture VRMA</label>
+    <select id="gesture-select">
+      <option value="VRMA/13_04.vrma">chin in hand (sit)</option>
+      <option value="VRMA/13_05.vrma">fidget (sit)</option>
+      <option value="VRMA/13_06.vrma">elbow out (sit)</option>
+      <option value="VRMA/13_07.vrma">drink soda (sit)</option>
+      <option value="VRMA/22_03.vrma">face in hands (sit)</option>
+      <option value="VRMA/111_16.vrma">peekaboo</option>
+      <option value="VRMA/111_25.vrma">shrug</option>
+      <option value="VRMA/111_37.vrma">wave</option>
+      <option value="VRMA/02_05.vrma">punch/strike</option>
+    </select>
+
+    <button id="btn-play">Play Gesture</button>
+    <button id="btn-stop">Stop Gesture</button>
+
+    <label>Idle VRMA</label>
+    <select id="idle-select">
+      <option value="VRMA/114_05.vrma">Sitting in chair</option>
+      <option value="VRMA/111_28.vrma">Standing still</option>
+      <option value="VRMA/111_14.vrma">Mope</option>
+      <option value="VRMA/40_10.vrma">Wait for bus</option>
+      <option value="VRMA/75_17.vrma">Medium sit</option>
+      <option value="VRMA/75_18.vrma">High sit</option>
+      <option value="VRMA/75_20.vrma">Low sit</option>
+    </select>
+
+    <button id="btn-change-idle">Change Idle</button>
+
+    <div id="track-info">Idle tracks: -<br/>Gesture tracks: -<br/>Filtered: -</div>
+  </div>
+
+  <script type="module">
+    BABYLON.TransformNode.prototype.getTotalVertices ??= () => 0;
+
+    const canvas = document.getElementById("renderCanvas");
+    const engine = new BABYLON.Engine(canvas, true);
+    const scene  = new BABYLON.Scene(engine);
+
+    scene.ambientColor = new BABYLON.Color3(0.1, 0.1, 0.15);
+    scene.clearColor   = new BABYLON.Color4(0.02, 0.02, 0.04, 1);
+
+    // Ground grid
+    const grid = BABYLON.MeshBuilder.CreateGround("grid", { width: 20, height: 20 }, scene);
+    const gridMat = new BABYLON.StandardMaterial("gridMat", scene);
+    gridMat.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+    gridMat.specularColor = new BABYLON.Color3(0, 0, 0);
+    gridMat.wireframe = true;
+    grid.material = gridMat;
+
+    // Lights
+    const key = new BABYLON.DirectionalLight("key", new BABYLON.Vector3(0.5, -1, 0.5), scene);
+    key.intensity = 1.5;
+    const fill = new BABYLON.HemisphericLight("fill", new BABYLON.Vector3(0, 1, 0), scene);
+    fill.intensity = 0.5;
+
+    // Camera (WASD controls)
+    const camTarget = new BABYLON.Vector3(0, 1, 0);
+    const camera = new BABYLON.ArcRotateCamera("cam", Math.PI/4, Math.PI/3, 4, camTarget, scene);
+    camera.attachControl(canvas, true);
+    camera.lowerRadiusLimit = 0.5;
+    camera.upperRadiusLimit = 20;
+    camera.wheelPrecision = 50;
+    camera.panningSensibility = 0;
+
+    const keys = { w: false, a: false, s: false, d: false, q: false, e: false };
+    document.addEventListener("keydown", e => {
+      const k = e.key.toLowerCase();
+      if (k in keys) { keys[k] = true; e.preventDefault(); }
+      if (k === "r") {
+        camTarget.set(0, 1, 0); camera.setTarget(camTarget);
+        camera.alpha = Math.PI/4; camera.beta = Math.PI/3; camera.radius = 4;
+      }
+    });
+    document.addEventListener("keyup", e => {
+      const k = e.key.toLowerCase();
+      if (k in keys) { keys[k] = false; e.preventDefault(); }
+    });
+
+    // ── Model loading ───────────────────────────────────────────────────────────
+    const defaultModel = "models/AIAN/AIAN_F_1_Casual";
+    let hashModel = location.hash ? location.hash.slice(1) : defaultModel;
+    if (!hashModel.match(/\.\w+$/)) hashModel += ".vrm";
+    const vrmPath = (hashModel.startsWith("http") || hashModel.startsWith("../")) ? hashModel : "../" + hashModel;
+    document.getElementById("ui-model").textContent = hashModel.split("/").pop().replace(/\.vrm$/i, "");
+
+    const preMgrCount = scene.metadata?.vrmManagers?.length ?? 0;
+    const preRootIds  = new Set(scene.rootNodes.map(n => n.uniqueId));
+
+    let actor = null;
+
+    BABYLON.SceneLoader.ImportMeshAsync(null, vrmPath, null, scene).then(() => {
+      const mgr  = scene.metadata?.vrmManagers?.[preMgrCount];
+      const root = scene.rootNodes.find(n => !preRootIds.has(n.uniqueId));
+      if (!mgr || !root) { console.error("VRM load failed"); return; }
+
+      const hips = mgr.humanoidBone?.hips;
+      if (hips) {
+        hips.computeWorldMatrix(true);
+        const p = hips.getAbsolutePosition();
+        camTarget.set(p.x, p.y + 0.5, p.z);
+        camera.setTarget(camTarget);
+      }
+
+      const vrmAvatar = new BABYLON.AnimatorAvatar("avatar-test", root);
+      actor = { mgr, root, vrmAvatar, idleGroup: null, gestureGroup: null };
+      loadIdle("VRMA/114_05.vrma");
+    });
+
+    // ── VRMA loading & retargeting ──────────────────────────────────────────────
+    const UPPER_BODY = new Set([
+      "Spine1", "Spine2", "Neck", "Head",
+      "LeftShoulder", "LeftArm", "LeftForeArm", "LeftHand",
+      "RightShoulder", "RightArm", "RightForeArm", "RightHand",
+    ]);
+
+    async function loadAndRetarget(url, name, opts = {}) {
+      if (!actor) return null;
+      const { filterUpper = false, fixRoot = false } = opts;
+      let container;
+      try { container = await BABYLON.LoadAssetContainerAsync(url.startsWith("../") ? url : "../" + url, scene); }
+      catch (e) { console.warn("[layer] VRMA load failed:", url, e); return null; }
+
+      const vrmAnimMgr = (scene.metadata?.vrmAnimationManagers ?? [])[0];
+      const srcGroup = container.animationGroups[0];
+      if (!vrmAnimMgr?.animationMap || !srcGroup) { container.dispose(); return null; }
+
+      const mapNodeNames = new Map();
+      srcGroup.targetedAnimations.forEach((ta, i) => {
+        const boneName = vrmAnimMgr.animationMap.get(i);
+        const bone = actor.mgr.humanoidBone[boneName];
+        if (bone && ta.target?.name) {
+          mapNodeNames.set(ta.target.name, bone.name);
+        }
+      });
+
+      const remapped = actor.vrmAvatar.retargetAnimationGroup(srcGroup, {
+        animationGroupName: name,
+        fixAnimations: true,
+        fixRootPosition: fixRoot,
+        rootNodeName: actor.mgr.humanoidBone["hips"]?.name,
+        groundReferenceNodeName: actor.mgr.humanoidBone["leftFoot"]?.name,
+        mapNodeNames,
+      });
+
+      container.dispose();
+      if (!remapped) return null;
+
+      // Filter to upper body if requested
+      if (filterUpper && remapped) {
+        const before = remapped.targetedAnimations.length;
+        const upper = new BABYLON.AnimationGroup(name + "-upper", scene);
+        for (const ta of remapped.targetedAnimations) {
+          if (ta.target && UPPER_BODY.has(ta.target.name)) {
+            upper.addTargetedAnimation(ta.animation, ta.target);
+          }
+        }
+        const after = upper.targetedAnimations.length;
+        remapped.dispose();
+        return { group: upper, total: before, kept: after, filtered: before - after };
+      }
+
+      return { group: remapped, total: remapped.targetedAnimations.length, kept: 0, filtered: 0 };
+    }
+
+    function disposeGroup(g) {
+      if (!g) return;
+      try { g.stop(); g.dispose(); } catch (e) {}
+    }
+
+    // ── Idle control ────────────────────────────────────────────────────────────
+    async function loadIdle(url) {
+      if (!actor) return;
+      disposeGroup(actor.idleGroup);
+      actor.idleGroup = null;
+
+      const result = await loadAndRetarget(url, "idle", { fixRoot: true });
+      if (!result) { document.getElementById("ui-idle").textContent = "FAILED"; return; }
+
+      actor.idleGroup = result.group;
+      result.group.start(false, 1.0, result.group.from, result.group.to, true); // loop
+
+      document.getElementById("ui-idle").textContent = url.split("/").pop();
+      updateTrackInfo(result.total, result.kept, "idle");
+    }
+
+    // ── Gesture control ─────────────────────────────────────────────────────────
+    let gestureActive = false;
+
+    async function playGesture(url) {
+      if (!actor) return;
+      disposeGroup(actor.gestureGroup);
+      actor.gestureGroup = null;
+
+      const result = await loadAndRetarget(url, "gesture", { filterUpper: true, fixRoot: false });
+      if (!result) { document.getElementById("ui-layer").textContent = "FAILED"; return; }
+      if (result.kept === 0) {
+        document.getElementById("ui-layer").textContent = "NO UPPER BODY TRACKS";
+        result.group.dispose();
+        return;
+      }
+
+      actor.gestureGroup = result.group;
+      result.group.start(false, 1.0, result.group.from, result.group.to, false); // one-shot
+      gestureActive = true;
+
+      document.getElementById("ui-layer").textContent = url.split("/").pop();
+      updateTrackInfo(result.total, result.kept, "gesture");
+
+      // Auto-clear when gesture finishes
+      const dur = (result.group.to - result.group.from) / 60;
+      setTimeout(() => {
+        disposeGroup(actor.gestureGroup);
+        actor.gestureGroup = null;
+        gestureActive = false;
+        document.getElementById("ui-layer").textContent = "none";
+      }, dur * 1000 + 100);
+    }
+
+    function stopGesture() {
+      disposeGroup(actor.gestureGroup);
+      actor.gestureGroup = null;
+      gestureActive = false;
+      document.getElementById("ui-layer").textContent = "none";
+    }
+
+    // ── UI ──────────────────────────────────────────────────────────────────────
+    let idleTrackCount = null;
+    let gestureTrackInfo = null;
+
+    function updateTrackInfo(total, kept, label, result) {
+      if (label === "idle") {
+        idleTrackCount = total;
+      } else {
+        gestureTrackInfo = { total, kept, filtered: total - kept };
+      }
+      const el = document.getElementById("track-info");
+      const idle = idleTrackCount !== null ? `Idle tracks: <span class="val">${idleTrackCount}</span>` : "Idle tracks: -";
+      const gest = gestureTrackInfo
+        ? `Gesture tracks: <span class="val">${gestureTrackInfo.total}</span> → kept <span class="good">${gestureTrackInfo.kept}</span> (removed ${gestureTrackInfo.filtered})`
+        : "Gesture tracks: -";
+      el.innerHTML = idle + "<br/>" + gest;
+    }
+
+    document.getElementById("btn-play").addEventListener("click", () => {
+      const sel = document.getElementById("gesture-select");
+      playGesture(sel.value);
+    });
+
+    document.getElementById("btn-stop").addEventListener("click", stopGesture);
+
+    document.getElementById("btn-change-idle").addEventListener("click", () => {
+      const sel = document.getElementById("idle-select");
+      loadIdle(sel.value);
+    });
+
+    // Quick-select: play gesture on Enter key
+    document.addEventListener("keydown", e => {
+      if (e.key === "Enter" && document.activeElement?.tagName !== "SELECT") {
+        document.getElementById("btn-play").click();
+      }
+    });
+
+    // ── Render loop ─────────────────────────────────────────────────────────────
+    const moveSpeed = 2.5;
+    scene.onBeforeRenderObservable.add(() => {
+      let dx = 0, dz = 0, dy = 0;
+      if (keys.w) dz += moveSpeed;
+      if (keys.s) dz -= moveSpeed;
+      if (keys.a) dx -= moveSpeed;
+      if (keys.d) dx += moveSpeed;
+      if (keys.q) dy -= moveSpeed;
+      if (keys.e) dy += moveSpeed;
+
+      if (dx !== 0 || dz !== 0 || dy !== 0) {
+        const dt = engine.getDeltaTime() / 1000;
+        const fwd = camera.getDirection(new BABYLON.Vector3(0, 0, 1));
+        const right = camera.getDirection(new BABYLON.Vector3(1, 0, 0));
+        fwd.y = 0; fwd.normalize();
+        right.y = 0; right.normalize();
+        camTarget.x += (fwd.x * dz + right.x * dx) * dt;
+        camTarget.z += (fwd.z * dz + right.z * dx) * dt;
+        camTarget.y += dy * dt;
+        camera.setTarget(camTarget);
+      }
+
+      document.getElementById("ui-pos").textContent =
+        `${camTarget.x.toFixed(2)}, ${camTarget.y.toFixed(2)}, ${camTarget.z.toFixed(2)}`;
+    });
+
+    engine.runRenderLoop(() => scene.render());
+    window.addEventListener("resize", () => engine.resize());
+  </script>
+
+</body>
+</html>

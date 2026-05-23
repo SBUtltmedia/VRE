@@ -41,6 +41,11 @@
     const loadEl    = document.getElementById('loading');
 
     const resolveAsset = p => (p && !p.startsWith('http')) ? '../' + p : p;
+    const resolveClipDef = def => {
+      if (!def) return null;
+      if (typeof def === 'string') return { url: resolveAsset(def) };
+      return { url: resolveAsset(def.url), from: def.from, to: def.to };
+    };
     const resolveVRM = p => {
       if (p.startsWith('http')) return p;
       if (p.startsWith('models/')) return '../' + p;
@@ -129,18 +134,19 @@
     // ── Actor loader ───────────────────────────────────────────────────────────
     const actors = {};
 
-    async function loadActor(id, vrmPath, startPos) {
+    async function loadActor(actorDef) {
+      const { id, vrm, startPosition, idleClip } = actorDef;
       loadEl.textContent = `Loading ${id}…`;
       const preMgrCount = scene.metadata?.vrmManagers?.length ?? 0;
       const preRootIds  = new Set(scene.rootNodes.map(n => n.uniqueId));
 
-      await BABYLON.ImportMeshAsync(resolveVRM(vrmPath), scene);
+      await BABYLON.ImportMeshAsync(resolveVRM(vrm), scene);
 
       const mgr = scene.metadata?.vrmManagers?.[preMgrCount];
       const root = scene.rootNodes.find(n => !preRootIds.has(n.uniqueId));
       if (!mgr || !root) { console.error('[scene] Load failed for', id); return; }
 
-      root.position.set(startPos?.x ?? 0, startPos?.y ?? 0, startPos?.z ?? 0);
+      root.position.set(startPosition?.x ?? 0, startPosition?.y ?? 0, startPosition?.z ?? 0);
 
       const vrmAvatar = new BABYLON.AnimatorAvatar(`avatar-${id}`, root);
 
@@ -161,11 +167,41 @@
         }
       }
 
-      actors[id] = { id, mgr, root, vrmAvatar, morphMap, faceAnim: null, curGroups: [] };
+      actors[id] = { id, mgr, root, vrmAvatar, morphMap, faceAnim: null, idleGroup: null, gestureGroup: null };
+
+      if (idleClip) {
+        const clip = resolveClipDef(idleClip);
+        if (!clip) return;
+        const g = await loadAndRetargetVRMA(actors[id], clip.url, 'idle', { fixRootPosition: true });
+        if (g) {
+          actors[id].idleGroup = g;
+          const from = clip.from ?? g.from;
+          const to = clip.to ?? g.to;
+          g.start(false, 1.0, from, to, true);
+        }
+      }
     }
 
     // ── VRMA body animation ────────────────────────────────────────────────────
-    async function loadAndRetargetVRMA(actor, url, name) {
+    const UPPER_BODY = new Set([
+      'Spine1', 'Spine2', 'Neck', 'Head',
+      'LeftShoulder', 'LeftArm', 'LeftForeArm', 'LeftHand',
+      'RightShoulder', 'RightArm', 'RightForeArm', 'RightHand',
+    ]);
+
+    function filterUpperBody(group, newName) {
+      const upper = new BABYLON.AnimationGroup(newName, scene);
+      for (const ta of group.targetedAnimations) {
+        if (ta.target && UPPER_BODY.has(ta.target.name)) {
+          upper.addTargetedAnimation(ta.animation, ta.target);
+        }
+      }
+      group.dispose();
+      return upper;
+    }
+
+    async function loadAndRetargetVRMA(actor, url, name, opts = {}) {
+      const { fixRootPosition = true } = opts;
       const managersBefore = (scene.metadata?.vrmAnimationManagers ?? []).length;
       let container;
       try { container = await BABYLON.LoadAssetContainerAsync(url, scene); }
@@ -190,7 +226,8 @@
 
       const remapped = actor.vrmAvatar.retargetAnimationGroup(srcGroup, {
         animationGroupName: `${actor.id}-${name}`,
-        fixRootPosition: true,
+        fixAnimations: true,
+        fixRootPosition,
         rootNodeName: actor.mgr.humanoidBone['hips']?.name,
         groundReferenceNodeName: actor.mgr.humanoidBone['leftFoot']?.name,
         mapNodeNames,
@@ -200,9 +237,12 @@
       return remapped;
     }
 
-    function stopActor(actor) {
-      actor.curGroups.forEach(g => { g.stop(); g.dispose(); });
-      actor.curGroups = [];
+    function stopGesture(actor) {
+      if (actor.gestureGroup) {
+        actor.gestureGroup.stop();
+        actor.gestureGroup.dispose();
+        actor.gestureGroup = null;
+      }
     }
 
     // ── Face animation (morph targets from audio2expression JSON) ─────────────
@@ -252,19 +292,22 @@
       speakerEl.textContent = event.actor.toUpperCase();
       lineEl.textContent    = event.description ?? '';
 
-      stopActor(actor);
+      stopGesture(actor);
       resetFace(actor);
 
       const targetX = actor.root.position.x * 0.4;
       camera.setTarget(BABYLON.Vector3.Lerp(camera.target, new BABYLON.Vector3(targetX, 1.05, 0), 0.6));
 
-      // Load body VRMA
+      // Load body VRMA as upper-body gesture on top of looping idle
       const clipUrl = event.clip || event.layers?.BODY;
       if (clipUrl) {
-        const g = await loadAndRetargetVRMA(actor, resolveAsset(clipUrl), 'clip');
+        const g = await loadAndRetargetVRMA(actor, resolveAsset(clipUrl), 'gesture', { fixRootPosition: false });
         if (g) {
-          actor.curGroups = [g];
-          g.start(false, 1.0, g.from, g.to, false);
+          const filtered = filterUpperBody(g, `${actor.id}-gesture`);
+          actor.gestureGroup = filtered;
+          if (filtered.targetedAnimations.length > 0) {
+            filtered.start(false, 1.0, filtered.from, filtered.to, false);
+          }
         }
       }
 
@@ -302,7 +345,7 @@
       }
 
       resetFace(actor);
-      stopActor(actor);
+      stopGesture(actor);
       progEl.style.width = '0%';
     }
 
@@ -317,7 +360,7 @@
     }
 
     for (const actorDef of (sceneData.actors ?? [])) {
-      await loadActor(actorDef.id, actorDef.vrm, actorDef.startPosition);
+      await loadActor(actorDef);
     }
 
     loadEl.style.display = 'none';

@@ -1,5 +1,5 @@
 /**
- * ChainStage.js - Multi-viewport stage for diagnostic analysis
+ * ChainStage.js - Single-camera stage with WASD controls
  */
 export class ChainStage {
     constructor(canvasId) {
@@ -9,7 +9,8 @@ export class ChainStage {
         
         this.setupEnvironment();
         this.setupLights();
-        this.setupCameras();
+        this.setupCamera();
+        this.setupKeyboard();
         
         window.addEventListener("resize", () => this.engine.resize());
     }
@@ -18,7 +19,6 @@ export class ChainStage {
         this.scene.ambientColor = new BABYLON.Color3(0.1, 0.1, 0.15);
         this.scene.clearColor = new BABYLON.Color4(0.02, 0.02, 0.04, 1);
         
-        // Add a grid for spatial reference
         const grid = BABYLON.MeshBuilder.CreateGround("grid", { width: 20, height: 20 }, this.scene);
         const gridMat = new BABYLON.StandardMaterial("gridMat", this.scene);
         gridMat.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.2);
@@ -30,61 +30,62 @@ export class ChainStage {
     setupLights() {
         const key = new BABYLON.DirectionalLight("key", new BABYLON.Vector3(0.5, -1, 0.5), this.scene);
         key.intensity = 1.5;
-        
         const fill = new BABYLON.HemisphericLight("fill", new BABYLON.Vector3(0, 1, 0), this.scene);
         fill.intensity = 0.5;
     }
 
-    setupCameras() {
-        const target = new BABYLON.Vector3(0, 1, 0);
+    setupCamera() {
+        this.camTarget = new BABYLON.Vector3(0, 1, 0);
+        this.camera = new BABYLON.ArcRotateCamera("cam", Math.PI / 4, Math.PI / 3, 4, this.camTarget, this.scene);
+        this.camera.attachControl(this.canvas, true);
+        this.camera.lowerRadiusLimit = 0.5;
+        this.camera.upperRadiusLimit = 20;
+        this.camera.wheelPrecision = 50;
+        this.camera.panningSensibility = 0;
+        this.scene.activeCamera = this.camera;
+    }
 
-        // 1. Perspective (Top-Left)
-        this.perspCam = new BABYLON.ArcRotateCamera("persp", Math.PI/4, Math.PI/3, 4, target, this.scene);
-        this.perspCam.viewport = new BABYLON.Viewport(0, 0.5, 0.5, 0.5);
-
-        // 2. Front (Top-Right)
-        this.frontCam = new BABYLON.FreeCamera("front", new BABYLON.Vector3(0, 1, 4), this.scene);
-        this.frontCam.setTarget(target);
-        this.frontCam.mode = BABYLON.Camera.ORTHOGRAPHIC_CAMERA;
-        this.frontCam.viewport = new BABYLON.Viewport(0.5, 0.5, 0.5, 0.5);
-
-        // 3. Side (Bottom-Left)
-        this.sideCam = new BABYLON.FreeCamera("side", new BABYLON.Vector3(4, 1, 0), this.scene);
-        this.sideCam.setTarget(target);
-        this.sideCam.mode = BABYLON.Camera.ORTHOGRAPHIC_CAMERA;
-        this.sideCam.viewport = new BABYLON.Viewport(0, 0, 0.5, 0.5);
-
-        // 4. Top (Bottom-Right)
-        this.topCam = new BABYLON.FreeCamera("top", new BABYLON.Vector3(0, 6, 0), this.scene);
-        this.topCam.setTarget(target);
-        this.topCam.mode = BABYLON.Camera.ORTHOGRAPHIC_CAMERA;
-        this.topCam.viewport = new BABYLON.Viewport(0.5, 0, 0.5, 0.5);
-
-        // Set Ortho size
-        const dist = 1.5;
-        [this.frontCam, this.sideCam, this.topCam].forEach(cam => {
-            cam.orthoLeft = -dist;
-            cam.orthoRight = dist;
-            cam.orthoTop = dist;
-            cam.orthoBottom = -dist;
+    setupKeyboard() {
+        this.keys = { w: false, a: false, s: false, d: false, q: false, e: false };
+        document.addEventListener("keydown", e => {
+            const k = e.key.toLowerCase();
+            if (k in this.keys) { this.keys[k] = true; e.preventDefault(); }
+            if (k === "r") {
+                this.camTarget.set(0, 1, 0);
+                this.camera.setTarget(this.camTarget);
+                this.camera.alpha = Math.PI / 4;
+                this.camera.beta = Math.PI / 3;
+                this.camera.radius = 4;
+            }
         });
-
-        this.scene.activeCameras.push(this.perspCam, this.frontCam, this.sideCam, this.topCam);
-        this.perspCam.attachControl(this.canvas, true);
+        document.addEventListener("keyup", e => {
+            const k = e.key.toLowerCase();
+            if (k in this.keys) { this.keys[k] = false; e.preventDefault(); }
+        });
     }
 
     startRenderLoop() {
-        this.engine.runRenderLoop(() => {
-            // Synchronize ortho cameras to follow the perspective target if needed
-            // For now, they stay centered on the origin or a relative offset
-            this.scene.render();
-        });
+        this.engine.runRenderLoop(() => this.scene.render());
     }
 
-    updateCameraTargets(target) {
-        this.scene.activeCameras.forEach(cam => {
-            if (cam.setTarget) cam.setTarget(target);
-            else cam.target = target;
-        });
+    moveSpeed(dt) {
+        const speed = 2.5;
+        let dx = 0, dz = 0, dy = 0;
+        if (this.keys.w) dz += speed;
+        if (this.keys.s) dz -= speed;
+        if (this.keys.a) dx -= speed;
+        if (this.keys.d) dx += speed;
+        if (this.keys.q) dy -= speed;
+        if (this.keys.e) dy += speed;
+        if (dx !== 0 || dz !== 0 || dy !== 0) {
+            const fwd = this.camera.getDirection(new BABYLON.Vector3(0, 0, 1));
+            const right = this.camera.getDirection(new BABYLON.Vector3(1, 0, 0));
+            fwd.y = 0; fwd.normalize();
+            right.y = 0; right.normalize();
+            this.camTarget.x += (fwd.x * dz + right.x * dx) * dt;
+            this.camTarget.z += (fwd.z * dz + right.z * dx) * dt;
+            this.camTarget.y += dy * dt;
+            this.camera.setTarget(this.camTarget);
+        }
     }
 }

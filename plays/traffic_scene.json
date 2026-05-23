@@ -9,12 +9,14 @@
     {
       "id": "jordan",
       "vrm": "models/Black/Black_F_2_Casual.vrm",
-      "startPosition": { "x": 0, "y": 0, "z": 0 }
+      "startPosition": { "x": 0, "y": 0, "z": 0 },
+      "idleClip": { "url": "VRMA/75_17.vrma", "from": 10, "to": 30 }
     },
     {
       "id": "officer",
       "vrm": "models/White/White_M_1_Util.vrm",
-      "startPosition": { "x": 1.2, "y": 0, "z": 0.3 }
+      "startPosition": { "x": 1.2, "y": 0, "z": 0.3 },
+      "idleClip": "VRMA/111_28.vrma"
     }
   ],
   "timeline": [

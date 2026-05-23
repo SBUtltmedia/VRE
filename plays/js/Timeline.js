@@ -104,6 +104,7 @@ export class TimelineManager {
 
         const remapped = actor.vrmAvatar.retargetAnimationGroup(srcGroup, {
             animationGroupName: `${actor.id}-${name}-${Date.now()}`,
+            fixAnimations: true,
             fixRootPosition: false,
             rootNodeName: actor.mgr.humanoidBone["hips"]?.name,
             groundReferenceNodeName: actor.mgr.humanoidBone["leftFoot"]?.name,

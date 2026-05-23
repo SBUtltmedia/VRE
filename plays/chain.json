@@ -6,12 +6,13 @@
   "actor": {
     "id": "test-character",
     "vrm": "models/AIAN/AIAN_F_1_Casual.vrm",
-    "startPosition": { "x": 0, "y": 0, "z": 0 }
+    "startPosition": { "x": 0, "y": 0, "z": 0 },
+    "defaultBlend": 200
   },
   "sequence": [
     { "name": "walk-turn-90-1", "clip": "VRMA/16_19.vrma" },
-    { "name": "walk-turn-90-2", "clip": "VRMA/16_19.vrma" },
-    { "name": "walk-turn-90-3", "clip": "VRMA/16_19.vrma" },
-    { "name": "walk-turn-90-4", "clip": "VRMA/16_19.vrma" }
+    { "name": "walk-turn-90-2", "clip": "VRMA/16_19.vrma", "blend": 550 },
+    { "name": "walk-turn-90-3", "clip": "VRMA/16_19.vrma", "blend": 550 },
+    { "name": "walk-turn-90-4", "clip": "VRMA/16_19.vrma", "blend": 550 }
   ]
 }

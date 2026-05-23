@@ -10,9 +10,10 @@
  *   avoiding any analytical derivation through the complex VRM hierarchy.
  */
 export class ChainTimeline {
-    constructor(stage, actor) {
+    constructor(stage, actor, config) {
         this.stage = stage;
         this.actor = actor;
+        this.config = config || {};
         this.currentIdx = 0;
         this.accumulatedPosition = new BABYLON.Vector3(0, 0, 0);
         this.accumulatedRotationY = 0;
@@ -122,6 +123,25 @@ export class ChainTimeline {
         }
     }
 
+    _snapshotFrame(clipName, animGroup) {
+        if (typeof window._chainData === 'undefined') return;
+        const wp = this._getHipsWorldPos();
+        if (!wp) return;
+        const wrY = this._getHipsWorldRotationY();
+        const totalFrames = animGroup.to - animGroup.from;
+        const curFrame = animGroup.animatables?.[0]?.masterFrame;
+        const progress = (curFrame != null && totalFrames > 0)
+            ? (curFrame - animGroup.from) / totalFrames
+            : Math.min(this._animT / this._animDuration, 1);
+        window._chainData.push({
+            clip: clipName,
+            progress: +(+progress.toFixed(4)),
+            px: +wp.x.toFixed(4),
+            pz: +wp.z.toFixed(4),
+            ry: +(wrY * 57.3).toFixed(2),
+        });
+    }
+
     async playNext(sequence) {
         if (this.currentIdx >= sequence.length) {
             console.log("[Chain] Sequence complete.");
@@ -142,31 +162,82 @@ export class ChainTimeline {
             return;
         }
 
-        // Initialize state for this clip
+        const fps = 60;
+        const duration = (animGroup.to - animGroup.from) / (fps * (animGroup.speedRatio || 1));
+        document.body.setAttribute("data-duration", duration.toFixed(3));
+
+        // Snapshot old bone transforms before new clip starts
+        const oldBoneSnapshot = {};
+        if (this.currentIdx > 0 && this.actor.curGroups?.length > 0) {
+            for (const ta of animGroup.targetedAnimations) {
+                const bone = ta.target;
+                if (bone?.name) {
+                    oldBoneSnapshot[bone.name] = {
+                        pos: bone.position.clone(),
+                        rot: bone.rotationQuaternion?.clone() ?? BABYLON.Quaternion.Identity(),
+                        scale: bone.scaling.clone(),
+                    };
+                }
+            }
+        }
+
+        this._animT = 0;
+        this._animDuration = duration;
+        const scene = this.stage.scene;
+        const onRender = () => { this._animT += scene.deltaTime / 1000; };
+        scene.onBeforeRenderObservable.add(onRender);
+
+        if (this.currentIdx === 0) {
+            this.accumulatedRotationY = this._getHipsWorldRotationY();
+            this.accumulatedPosition.copyFrom(this._getHipsWorldPos());
+        }
+
         animGroup.start(false);
         animGroup.goToFrame(animGroup.from);
 
         const hips = this.actor.mgr.humanoidBone["hips"];
         if (hips) hips.computeWorldMatrix(true);
 
-        // FIRST clip: initialize accumulated state from character's base pose
-        if (this.currentIdx === 0) {
-            this.accumulatedRotationY = this._getHipsWorldRotationY();
-            this.accumulatedPosition.copyFrom(this._getHipsWorldPos());
-        }
-
-        // Align root so Hips world matches accumulatedPosition.
-        // For clip 0 the root is at identity and accumulatedPosition
-        // already matched; _alignRootToAccumulated corrects any drift.
-        // For subsequent clips, Hips local snapped from end-of-prev to
-        // start-of-this and root compensation happens here.
+        // Align root AFTER goToFrame, using the new clip's first-frame bone pose.
+        // This absorbs the boundary mismatch between old-clip end and new-clip start
+        // into the root.position, so the accumulator delta for this clip is pure
+        // root motion (new_clip_local_final - new_clip_local_first).
         this._alignRootToAccumulated();
 
-        // Dispose previous groups ONLY after alignment
+        // Dispose old groups NOW — the snapshot was captured and alignment is done.
+        // The new group runs alone from here.
         if (this.actor.curGroups && this.actor.curGroups.length > 0) {
             this.actor.curGroups.forEach(g => { g.stop(); g.dispose(); });
         }
         this.actor.curGroups = [animGroup];
+
+        // Blend phase: manually crossfade each bone from old snapshot to new animation.
+        // NO snapshot during blend — the interpolated body pose is non-deterministic.
+        // Only the accumulator-controlled root path is tested via golden data, and that
+        // converges to the accumulator by blend-end.
+        const blendMs = this.currentIdx > 0
+            ? (step.blend ?? this.config.defaultBlend ?? 200)
+            : 0;
+        const blendStart = blendMs > 0 ? performance.now() : 0;
+
+        if (blendMs > 0) {
+            const blendEnd = blendStart + blendMs;
+            while (performance.now() < blendEnd) {
+                await new Promise(r => requestAnimationFrame(r));
+                const t = Math.min((performance.now() - blendStart) / blendMs, 1);
+                for (const ta of animGroup.targetedAnimations) {
+                    const bone = ta.target;
+                    if (!bone?.name) continue;
+                    const snap = oldBoneSnapshot[bone.name];
+                    if (!snap) continue;
+                    bone.position = BABYLON.Vector3.Lerp(snap.pos, bone.position, t);
+                    if (bone.rotationQuaternion) {
+                        bone.rotationQuaternion = BABYLON.Quaternion.Slerp(snap.rot, bone.rotationQuaternion, t);
+                    }
+                    bone.scaling = BABYLON.Vector3.Lerp(snap.scale, bone.scaling, t);
+                }
+            }
+        }
 
         const startWorldRotY = this._getHipsWorldRotationY();
         console.log(`[Chain] World start: pos(${this.accumulatedPosition.x.toFixed(3)}, ${this.accumulatedPosition.z.toFixed(3)}) rotY(${(startWorldRotY * 57.3).toFixed(1)}°)`);
@@ -174,18 +245,13 @@ export class ChainTimeline {
         this._publishWorldPos();
         document.body.setAttribute("data-frame", "start");
 
-        const fps = 60;
-        const duration = (animGroup.to - animGroup.from) / (fps * (animGroup.speedRatio || 1));
-        document.body.setAttribute("data-duration", duration.toFixed(3));
-
-        const startTime = performance.now();
-        const endTime = startTime + duration * 1000;
-
-        while (performance.now() < endTime) {
+        while (this._animT < this._animDuration) {
             await new Promise(r => requestAnimationFrame(r));
+            this._snapshotFrame(step.name, animGroup);
         }
 
-        // Capture end state
+        scene.onBeforeRenderObservable.removeCallback(onRender);
+
         if (hips) hips.computeWorldMatrix(true);
         const endWorldPos = this._getHipsWorldPos();
         const endWorldRotY = this._getHipsWorldRotationY();
@@ -204,11 +270,10 @@ export class ChainTimeline {
         console.log(`[Chain] Accumulated: pos(${this.accumulatedPosition.x.toFixed(3)}, ${this.accumulatedPosition.z.toFixed(3)}) rotY(${(this.accumulatedRotationY * 57.3).toFixed(1)}°)`);
 
         this._publishWorldPos();
+        this._snapshotFrame(step.name, animGroup);
         document.body.setAttribute("data-frame", "end");
         this.currentIdx++;
 
-        // Wait for test poll to capture the "end" state before transitioning
-        await new Promise(r => setTimeout(r, 200));
         this.playNext(sequence);
     }
 }

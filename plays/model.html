@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>VRM Viewer</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <link rel="icon" href="data:,">
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
+  <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+  <script>
+    window.LOADERS = BABYLON;
+    window.BABYLON = BABYLON;
+  </script>
+  <script src="https://xuhuisheng.github.io/babylonjs-vrm/babylon-vrm-loader.js"></script>
+
+  <style>
+    html, body, #renderCanvas { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #05050a; }
+    #overlay {
+      position: absolute; top: 20px; left: 20px;
+      color: #aef; font: 14px monospace; background: rgba(0,0,0,0.6);
+      padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+      pointer-events: none;
+    }
+    #help {
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+      color: rgba(255,255,255,0.4); font: 12px monospace;
+      background: rgba(0,0,0,0.4); padding: 8px 16px;
+      border-radius: 6px; pointer-events: none;
+      user-select: none;
+    }
+    .val { color: #fff; font-weight: bold; }
+    .dim { opacity: 0.5; }
+  </style>
+</head>
+<body>
+
+  <canvas id="renderCanvas"></canvas>
+
+  <div id="overlay">
+    <div>Model: <span id="ui-model" class="val">-</span></div>
+    <div>VRMA: <span id="ui-vrma" class="val">-</span></div>
+    <div>VRMA2: <span id="ui-vrma2" class="val">-</span></div>
+    <div>Blend: <span id="ui-blend" class="val">0.50</span></div>
+    <div>Pos: <span id="ui-pos" class="val">0, 0, 0</span></div>
+    <div>Cam: <span id="ui-cam" class="val">0, 0</span></div>
+  </div>
+
+  <div id="help">WASD move · Q/E up/down · Mouse orbit · Scroll zoom</div>
+
+  <script type="module">
+    BABYLON.TransformNode.prototype.getTotalVertices ??= () => 0;
+
+    const canvas = document.getElementById("renderCanvas");
+    const engine = new BABYLON.Engine(canvas, true);
+    const scene = new BABYLON.Scene(engine);
+
+    scene.ambientColor = new BABYLON.Color3(0.1, 0.1, 0.15);
+    scene.clearColor = new BABYLON.Color4(0.02, 0.02, 0.04, 1);
+    scene.collisionsEnabled = false;
+
+    // Ground grid
+    const grid = BABYLON.MeshBuilder.CreateGround("grid", { width: 20, height: 20 }, scene);
+    const gridMat = new BABYLON.StandardMaterial("gridMat", scene);
+    gridMat.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+    gridMat.specularColor = new BABYLON.Color3(0, 0, 0);
+    gridMat.wireframe = true;
+    grid.material = gridMat;
+
+    // Lights
+    const key = new BABYLON.DirectionalLight("key", new BABYLON.Vector3(0.5, -1, 0.5), scene);
+    key.intensity = 1.5;
+    const fill = new BABYLON.HemisphericLight("fill", new BABYLON.Vector3(0, 1, 0), scene);
+    fill.intensity = 0.5;
+
+    // Camera
+    const camTarget = new BABYLON.Vector3(0, 1, 0);
+    const camera = new BABYLON.ArcRotateCamera("cam", Math.PI / 4, Math.PI / 3, 4, camTarget, scene);
+    camera.attachControl(canvas, true);
+    camera.lowerRadiusLimit = 0.5;
+    camera.upperRadiusLimit = 20;
+    camera.wheelPrecision = 50;
+    camera.panningSensibility = 0;
+
+    // Keyboard state
+    const keys = { w: false, a: false, s: false, d: false, q: false, e: false };
+    document.addEventListener("keydown", e => {
+      const k = e.key.toLowerCase();
+      if (k in keys) { keys[k] = true; e.preventDefault(); }
+      if (k === "r") {
+        camTarget.set(0, 1, 0);
+        camera.setTarget(camTarget);
+        camera.alpha = Math.PI / 4;
+        camera.beta = Math.PI / 3;
+        camera.radius = 4;
+      }
+    });
+    document.addEventListener("keyup", e => {
+      const k = e.key.toLowerCase();
+      if (k in keys) { keys[k] = false; e.preventDefault(); }
+    });
+
+    // Parse query params
+    const params = new URLSearchParams(location.search);
+    const paramModel = params.get('model') || '';
+    const paramVrma  = params.get('vrma') || '';
+    const paramVrma2 = params.get('vrma2') || '';
+    const paramBlend = params.get('blend');
+
+    // Resolve model path
+    const defaultModel = "models/AIAN/AIAN_F_1_Casual";
+    const hashModel = location.hash ? location.hash.slice(1) : '';
+    const rawModel = paramModel || hashModel || defaultModel;
+    const modelPath = !rawModel.match(/\.\w+$/) ? rawModel + ".vrm" : rawModel;
+    const vrmPath = (modelPath.startsWith("http") || modelPath.startsWith("../")) ? modelPath : "../" + modelPath;
+    const modelName = modelPath.split("/").pop().replace(/\.vrm$/i, "");
+
+    const defaultVrma  = "VRMA/114_05.vrma";
+    const defaultVrma2 = "VRMA/111_28.vrma";
+    const rawVrma  = paramVrma  || defaultVrma;
+    const rawVrma2 = paramVrma2 || defaultVrma2;
+    const vrmaPath  = (rawVrma.startsWith("http") || rawVrma.startsWith("../")) ? rawVrma : "../" + rawVrma;
+    const vrmaPath2 = (rawVrma2.startsWith("http") || rawVrma2.startsWith("../")) ? rawVrma2 : "../" + rawVrma2;
+    const vrmaName  = rawVrma.split("/").pop();
+    const vrmaName2 = rawVrma2.split("/").pop();
+    const blendWeight = paramBlend !== null ? Math.min(1, Math.max(0, parseFloat(paramBlend))) : 0.5;
+    const frameFrom = params.get('from') ? parseInt(params.get('from'), 10) : null;
+    const frameTo   = params.get('to') ? parseInt(params.get('to'), 10) : null;
+
+    document.getElementById("ui-model").textContent = modelName;
+    document.getElementById("ui-vrma").textContent = vrmaName + (frameFrom !== null ? ` f${frameFrom}-${frameTo ?? 'end'}` : '');
+    document.getElementById("ui-vrma2").textContent = vrmaName2;
+    document.getElementById("ui-blend").textContent = blendWeight.toFixed(2);
+    document.getElementById("help").textContent = "WASD move · Q/E up/down · Mouse orbit · Scroll zoom · R reset view";
+
+    // Load VRM
+    const preMgrCount = scene.metadata?.vrmManagers?.length ?? 0;
+    const preRootIds = new Set(scene.rootNodes.map(n => n.uniqueId));
+
+    BABYLON.SceneLoader.ImportMeshAsync(null, vrmPath, null, scene).then(async () => {
+      const mgr = scene.metadata?.vrmManagers?.[preMgrCount];
+      const root = scene.rootNodes.find(n => !preRootIds.has(n.uniqueId));
+      if (!mgr || !root) return;
+
+      const hips = mgr.humanoidBone?.hips;
+      if (hips) {
+        hips.computeWorldMatrix(true);
+        const p = hips.getAbsolutePosition();
+        camTarget.set(p.x, p.y + 0.5, p.z);
+        camera.setTarget(camTarget);
+      }
+
+      // Load VRMAs after VRM
+      function buildMapNodeNames(srcGrp, vrmMgr) {
+        const map = new Map();
+        srcGrp.targetedAnimations.forEach((ta, i) => {
+          const boneName = vrmMgr.animationMap.get(i);
+          const bone = mgr.humanoidBone[boneName];
+          if (bone && ta.target?.name) map.set(ta.target.name, bone.name);
+        });
+        return map;
+      }
+
+      async function loadVRMA(path, name) {
+        const preCount = (scene.metadata?.vrmAnimationManagers ?? []).length;
+        const container = await BABYLON.LoadAssetContainerAsync(path, scene);
+        const vrmAnimMgr = (scene.metadata?.vrmAnimationManagers ?? [])[preCount];
+        const srcGroup = container.animationGroups[0];
+        if (!vrmAnimMgr?.animationMap || !srcGroup) { container.dispose(); return null; }
+
+        const mapNodeNames = buildMapNodeNames(srcGroup, vrmAnimMgr);
+        const remapped = vrmAvatar.retargetAnimationGroup(srcGroup, {
+          animationGroupName: name,
+          fixAnimations: true,
+          fixRootPosition: true,
+          rootNodeName: mgr.humanoidBone['hips']?.name,
+          groundReferenceNodeName: mgr.humanoidBone['leftFoot']?.name,
+          mapNodeNames,
+        });
+        container.dispose();
+        return remapped;
+      }
+
+      const vrmAvatar = new BABYLON.AnimatorAvatar('avatar', root);
+      const group1 = await loadVRMA(vrmaPath,  'vrma1');
+      const group2 = await loadVRMA(vrmaPath2, 'vrma2');
+
+      if (group1) {
+        const from = frameFrom ?? group1.from;
+        const to = frameTo ?? group1.to;
+        group1.weight = 1 - blendWeight;
+        group1.start(false, 1.0, from, to, false);
+      }
+      if (group2) {
+        group2.weight = blendWeight;
+        group2.start(false, 1.0, group2.from, group2.to, false);
+      }
+    });
+
+    // Render loop with WASD movement
+    const moveSpeed = 2.5;
+    scene.onBeforeRenderObservable.add(() => {
+      let dx = 0, dz = 0, dy = 0;
+      if (keys.w) dz += moveSpeed;
+      if (keys.s) dz -= moveSpeed;
+      if (keys.a) dx -= moveSpeed;
+      if (keys.d) dx += moveSpeed;
+      if (keys.q) dy -= moveSpeed;
+      if (keys.e) dy += moveSpeed;
+
+      if (dx !== 0 || dz !== 0 || dy !== 0) {
+        const dt = engine.getDeltaTime() / 1000;
+        const fwd = camera.getDirection(new BABYLON.Vector3(0, 0, 1));
+        const right = camera.getDirection(new BABYLON.Vector3(1, 0, 0));
+        fwd.y = 0; fwd.normalize();
+        right.y = 0; right.normalize();
+
+        camTarget.x += (fwd.x * dz + right.x * dx) * dt;
+        camTarget.z += (fwd.z * dz + right.z * dx) * dt;
+        camTarget.y += dy * dt;
+        camera.setTarget(camTarget);
+      }
+
+      // Update UI
+      document.getElementById("ui-pos").textContent =
+        `${camTarget.x.toFixed(2)}, ${camTarget.y.toFixed(2)}, ${camTarget.z.toFixed(2)}`;
+      document.getElementById("ui-cam").textContent =
+        `${(camera.alpha * 57.3).toFixed(0)}°, ${(camera.beta * 57.3).toFixed(0)}°`;
+    });
+
+    engine.runRenderLoop(() => scene.render());
+    window.addEventListener("resize", () => engine.resize());
+  </script>
+
+</body>
+</html>
