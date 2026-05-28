@@ -45,9 +45,9 @@
   </div>
 
   <script type="module">
-    import { ChainStage } from "./js/ChainStage.js";
+    import { Stage } from "./js/Stage.js";
     import { Character } from "./js/Character.js";
-    import { ChainTimeline } from "./js/ChainTimeline.js";
+    import { TimelineManager } from "./js/Timeline.js";
 
     BABYLON.TransformNode.prototype.getTotalVertices ??= () => 0;
 
@@ -56,7 +56,7 @@
     const camEl = document.getElementById("ui-cam");
     const msgEl = document.getElementById("ui-msg");
 
-    const stage = new ChainStage("renderCanvas");
+    const stage = new Stage("renderCanvas");
     const configUrl = new URLSearchParams(location.search).get("config") || "chain.json";
     const chainData = await fetch(configUrl).then(r => r.json());
 
@@ -79,7 +79,8 @@
         }
 
         const character = new Character(def.id, root, mgr);
-        const timeline = new ChainTimeline(stage, character, def);
+        const actors = { [def.id]: character };
+        const timeline = new TimelineManager(stage, actors);
 
         // Debug: Granular VRMA track inspection
         window.inspectVRMA = async (url) => {
@@ -111,7 +112,7 @@
         window.addEventListener("click", () => {
             msgEl.textContent = "Sequence started.";
             stage.startRenderLoop();
-            timeline.playNext(chainData.sequence);
+            timeline.playSequential(def.id, chainData.sequence);
 
             // Update UI loop
             stage.scene.onBeforeRenderObservable.add(() => {

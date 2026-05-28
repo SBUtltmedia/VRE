@@ -1,0 +1,3 @@
+When an animation plays because it is from mocap it contrains bone motion to the physicly possibe, when the transition happens it visible obviously violates physical constrants, we need to resolve using puppeteer and by    
+   lenghthing the transition during to test to better diagnose                                                                                                                                                                    
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀

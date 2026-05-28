@@ -62,19 +62,34 @@
       const humanBones = ext.humanoid?.humanBones;
       if (!humanBones) return;
 
-      const animationMap = new Map(); // VRMA nodeIdx  → boneName
-      const nameMap      = new Map(); // VRMA nodeName → boneName
+      // Build nodeIdx → boneName lookup
+      const nodeToBone = new Map();
       for (const [boneName, boneData] of Object.entries(humanBones)) {
         if (boneData.node != null) {
-          animationMap.set(boneData.node, boneName);
-          const nodeName = this.loader.gltf.nodes?.[boneData.node]?.name;
-          if (nodeName) nameMap.set(nodeName, boneName);
+          nodeToBone.set(boneData.node, boneName);
+        }
+      }
+      // Build animationMap: channelIndex → boneName (matches targetedAnimation order)
+      const animationMap = new Map();
+      const nameMap      = new Map();
+      for (const anim of (this.loader.gltf.animations ?? [])) {
+        for (const channel of (anim.channels ?? [])) {
+          const boneName = nodeToBone.get(channel.target.node);
+          if (boneName) {
+            animationMap.set(channel.index, boneName);
+            const nodeName = this.loader.gltf.nodes?.[channel.target.node]?.name;
+            if (nodeName) nameMap.set(nodeName, boneName);
+          }
         }
       }
 
       if (!scene.metadata) scene.metadata = {};
+      if (!scene.metadata._vrmAnimations) scene.metadata._vrmAnimations = [];
+      scene.metadata._vrmAnimations.push({ animationMap, nameMap });
+      // Push to vrmAnimationManagers as well for backward compat (may be cleared by babylon-vrm-loader)
       if (!scene.metadata.vrmAnimationManagers) scene.metadata.vrmAnimationManagers = [];
       scene.metadata.vrmAnimationManagers.push({ animationMap, nameMap });
+
       console.log('[VRM1] VRMC_vrm_animation extension ready — nameMap size:', nameMap.size);
     }
   }

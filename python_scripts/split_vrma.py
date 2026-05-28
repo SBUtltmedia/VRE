@@ -2,8 +2,8 @@
 split_vrma.py - Split a VRMA file into root and body layers.
 
 Usage:
-  python split_vrma.py VRMA/81_04.vrma
-  python split_vrma.py VRMA/81_04.vrma --output-dir VRMA/split
+  python split_vrma.py vrma/81_04.vrma
+  python split_vrma.py vrma/81_04.vrma --output-dir vrma/split
 
 Root layer:  Hips translation channels only (root motion)
 Body layer:  All channels EXCEPT Hips translation (bone rotations, no root motion)
@@ -203,7 +203,7 @@ def split_vrma(input_path, output_dir=None):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Split VRMA into root and body layers')
     parser.add_argument('input', help='Path to VRMA file')
-    parser.add_argument('--output-dir', '-o', help='Output directory (default: VRMA/split/)')
+    parser.add_argument('--output-dir', '-o', help='Output directory (default: vrma/split/)')
     args = parser.parse_args()
 
     success = split_vrma(args.input, args.output_dir)

@@ -6,9 +6,9 @@ This causes a jarring 1-frame pop at the start of playback. This script strips
 that first keyframe from all animation channels.
 
 Usage:
-  python vrm_remove_tpose.py VRMA/114_05.vrma              # in-place
-  python vrm_remove_tpose.py VRMA/114_05.vrma -o fixed.vrma # to new file
-  python vrm_remove_tpose.py VRMA/*.vrma                    # batch in-place
+  python vrm_remove_tpose.py vrma/114_05.vrma              # in-place
+  python vrm_remove_tpose.py vrma/114_05.vrma -o fixed.vrma # to new file
+  python vrm_remove_tpose.py vrma/*.vrma                    # batch in-place
 """
 
 import struct

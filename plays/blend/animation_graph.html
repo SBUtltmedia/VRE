@@ -1,0 +1,234 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>VRM Animation Graph (Zero Snap Demo)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
+  <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+  <style>
+    html, body, #renderCanvas { width:100%; height:100%; margin:0; padding:0; overflow:hidden; background:#0a0a12; }
+    #ui {
+      position:absolute; bottom:20px; left:20px; right:20px;
+      padding:20px; background:rgba(0,0,0,0.7);
+      font-family:monospace; color:#fff; pointer-events:none; border-radius: 8px;
+    }
+    #diagnostics {
+      position:absolute; top:20px; left:20px;
+      padding:15px; background:rgba(0,20,0,0.8);
+      color:#0f0; font:11px monospace; pointer-events:none; border-radius:4px;
+      border: 1px solid #0f0;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="renderCanvas"></canvas>
+  <div id="diagnostics">
+    <div style="font-weight:bold; margin-bottom:8px; border-bottom:1px solid #0f0;">ANIMATION GRAPH MONITOR</div>
+    <div id="status">Status: Initializing...</div>
+    <div id="bone-list"></div>
+    <div id="violation-count" style="margin-top:8px; color:#f55;">Violations: 0</div>
+  </div>
+  <div id="ui">
+    <div id="log">Click to start Animation Graph demo...</div>
+  </div>
+
+  <script type="module">
+    // ── Setup ────────────────────────────────────────────────────────────────
+    const canvas = document.getElementById('renderCanvas');
+    const engine = new BABYLON.Engine(canvas, true);
+    const scene  = new BABYLON.Scene(engine);
+    
+    scene.clearColor = new BABYLON.Color4(0.05, 0.05, 0.1, 1);
+    const camera = new BABYLON.ArcRotateCamera('cam', Math.PI/2, Math.PI/2.2, 3, new BABYLON.Vector3(0, 1.2, 0), scene);
+    camera.attachControl(canvas, true);
+    new BABYLON.HemisphericLight('light', new BABYLON.Vector3(0, 1, 0), scene);
+
+    const diagStatus = document.getElementById('status');
+    const diagBones  = document.getElementById('bone-list');
+    const diagViol   = document.getElementById('violation-count');
+    const logEl      = document.getElementById('log');
+
+    const TRACKED_BONES = ['hips', 'spine', 'chest', 'upperChest', 'neck', 'leftUpperArm', 'rightUpperArm'];
+    const SNAP_THRESH = 0.5; // degrees per frame
+    const POS_THRESH = 0.01; // units per frame
+    let physicalViolations = [];
+    let lastRotations = {};
+    let lastPositions = {};
+
+    // ── Load VRM Loader Extension ───────────────────────────────────────────
+    window.LOADERS = BABYLON;
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://xuhuisheng.github.io/babylonjs-vrm/babylon-vrm-loader.js';
+      s.onload = () => {
+        const s2 = document.createElement('script');
+        s2.src = '../vrm1-loader.js';
+        s2.onload = res;
+        s2.onerror = () => { console.warn('vrm1-loader missing'); res(); };
+        document.head.appendChild(s2);
+      };
+      s.onerror = rej;
+      document.head.appendChild(s);
+    });
+
+    // ── Asset Loading ────────────────────────────────────────────────────────
+    async function loadDemo() {
+      diagStatus.textContent = 'Loading Actor...';
+      
+      const vrmPath = '../../models/AIAN/';
+      const vrmFile = 'AIAN_F_1_Casual.vrm';
+      const idleUrl = '../../VRMA/16_01.vrma';
+      const gestureUrl = '../../VRMA/08_01.vrma';
+
+      // Load using .glb plugin hint to force binary parse
+      const res = await BABYLON.SceneLoader.ImportMeshAsync('', vrmPath, vrmFile, scene, null, '.glb');
+      const root = res.meshes[0];
+      const mgr = scene.metadata.vrmManagers.at(-1);
+      const vrmAvatar = new BABYLON.AnimatorAvatar('avatar', root);
+
+      diagStatus.textContent = 'Retargeting VRMAs...';
+      
+      const loadRetarget = async (url, name) => {
+        const container = await BABYLON.LoadAssetContainerAsync(url, scene);
+        const srcGroup = container.animationGroups[0];
+        
+        // 1. STABLE TRANSLATION SCALE (Fixes Hips height snaps)
+        let translationScale = 1;
+        const vrmAnimMgr = scene.metadata._vrmAnimations?.at(-1);
+        const hipsEntry = [...vrmAnimMgr?.animationMap?.entries() || []]
+          .find(([, bName]) => bName === 'hips');
+        
+        if (hipsEntry) {
+          const hipsAnim = srcGroup.targetedAnimations[hipsEntry[0]]?.animation;
+          if (hipsAnim && hipsAnim.targetProperty === 'position') {
+            const keys = hipsAnim.getKeys();
+            const vrmaHipsY = keys.length > 0 ? keys[0].value.y : 0;
+            const actorHipsY = mgr.humanoidBone['hips']?.absolutePosition?.y || 1;
+            if (vrmaHipsY !== 0) translationScale = actorHipsY / vrmaHipsY;
+          }
+        }
+
+        const mapNodeNames = new Map();
+        if (vrmAnimMgr?.animationMap) {
+          srcGroup.targetedAnimations.forEach((ta, i) => {
+            const boneKey = vrmAnimMgr.animationMap.get(i);
+            const bone = mgr.humanoidBone[boneKey];
+            if (bone) mapNodeNames.set(ta.target.name, bone.name);
+          });
+        }
+
+        const remapped = vrmAvatar.retargetAnimationGroup(srcGroup, {
+          animationGroupName: name,
+          rootNodeName: mgr.humanoidBone['hips']?.name,
+          mapNodeNames,
+          fixRootPosition: true, // Help with grounding
+        });
+
+        // Apply scaling to the remapped tracks
+        remapped.targetedAnimations.forEach(ta => {
+          if (ta.animation.targetProperty === 'position') {
+            ta.animation.getKeys().forEach(kf => {
+              kf.value = kf.value.scale(translationScale);
+            });
+          }
+        });
+
+        container.dispose();
+        return remapped;
+      };
+
+      const idleGroup = await loadRetarget(idleUrl, 'Idle');
+      const gestureGroup = await loadRetarget(gestureUrl, 'Gesture');
+
+      // ── Weight-based Blending (AnimationGroup.weight) ────────────────────
+      diagStatus.textContent = 'Starting Animations...';
+      
+      // Play both groups simultaneously; weight controls blend.
+      idleGroup.start(true, 1.0, 0, idleGroup.to, false);
+      gestureGroup.weight = 0;
+      gestureGroup.start(true, 1.0, 0, gestureGroup.to, false);
+
+      diagStatus.textContent = 'Running - Ready for Test';
+      logEl.textContent = 'Demo Ready. Press SPACE to toggle Gesture (5s transition)';
+
+      // ── Runtime Interaction ───────────────────────────────────────────────
+      let isGesture = false;
+      let transitionTime = 5.0;
+      
+      window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') {
+          isGesture = !isGesture;
+          logEl.textContent = isGesture ? `Transitioning to GESTURE (${transitionTime}s)...` : `Transitioning to IDLE (${transitionTime}s)...`;
+        }
+      });
+
+      scene.onBeforeRenderObservable.add(() => {
+        const dt = engine.getDeltaTime() / 1000;
+        const targetWeight = isGesture ? 1 : 0;
+        const delta = dt / transitionTime;
+        const w = gestureGroup.weight;
+        
+        if (w < targetWeight) {
+          gestureGroup.weight = Math.min(targetWeight, w + delta);
+        } else if (w > targetWeight) {
+          gestureGroup.weight = Math.max(targetWeight, w - delta);
+        }
+
+        // ── Real-time Violation Monitoring ──────────────────────────────────
+        let diagHtml = '';
+        const now = performance.now() / 1000;
+
+        for (const boneName of TRACKED_BONES) {
+          const bone = mgr.humanoidBone[boneName];
+          if (bone) {
+            // 1. Rotation Check
+            const q = bone.rotationQuaternion || BABYLON.Quaternion.FromEulerAngles(bone.rotation.x, bone.rotation.y, bone.rotation.z);
+            const deg = q.toEulerAngles().scale(180/Math.PI);
+
+            if (lastRotations[boneName]) {
+              const lastQ = lastRotations[boneName];
+              const dot = Math.abs(lastQ.x * q.x + lastQ.y * q.y + lastQ.z * q.z + lastQ.w * q.w);
+              const angle = 2 * Math.acos(Math.min(1, dot)) * (180/Math.PI);
+
+              if (angle > SNAP_THRESH) {
+                physicalViolations.push({ bone: boneName, type: 'ROT', magnitude: angle, time: now });
+                console.warn(`[ROT SNAP] ${boneName} jumped ${angle.toFixed(2)}°`);
+              }
+            }
+            lastRotations[boneName] = q.clone();
+
+            // 2. Position Check (Hips only)
+            let posHtml = '';
+            if (boneName === 'hips') {
+              const p = bone.position;
+              if (lastPositions[boneName]) {
+                const lastP = lastPositions[boneName];
+                const dist = BABYLON.Vector3.Distance(lastP, p);
+                if (dist > POS_THRESH) {
+                  physicalViolations.push({ bone: boneName, type: 'POS', magnitude: dist, time: now });
+                  console.warn(`[POS SNAP] ${boneName} jumped ${dist.toFixed(3)} units`);
+                }
+              }
+              lastPositions[boneName] = p.clone();
+              posHtml = ` <span style="color:#aaa;">P:${p.x.toFixed(2)},${p.y.toFixed(2)},${p.z.toFixed(2)}</span>`;
+            }
+
+            diagHtml += `<div>${boneName.padEnd(14)}: ${deg.x.toFixed(1)}, ${deg.y.toFixed(1)}, ${deg.z.toFixed(1)}${posHtml}</div>`;
+          }
+        }
+        diagBones.innerHTML = diagHtml;
+        diagViol.textContent = `Violations: ${physicalViolations.length}`;
+        if (physicalViolations.length > 0) diagViol.style.color = '#f55';
+      });
+    }
+
+    canvas.addEventListener('click', () => {
+      loadDemo();
+      engine.runRenderLoop(() => scene.render());
+    }, { once: true });
+
+    window.addEventListener('resize', () => engine.resize());
+  </script>
+</body>
+</html>

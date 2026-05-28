@@ -108,27 +108,32 @@
 
     // Resolve model path
     const defaultModel = "models/AIAN/AIAN_F_1_Casual";
-    const hashModel = location.hash ? location.hash.slice(1) : '';
+    const hashModel = location.hash ? location.hash.slice(1).split('?')[0] : '';
     const rawModel = paramModel || hashModel || defaultModel;
     const modelPath = !rawModel.match(/\.\w+$/) ? rawModel + ".vrm" : rawModel;
     const vrmPath = (modelPath.startsWith("http") || modelPath.startsWith("../")) ? modelPath : "../" + modelPath;
     const modelName = modelPath.split("/").pop().replace(/\.vrm$/i, "");
 
-    const defaultVrma  = "VRMA/114_05.vrma";
-    const defaultVrma2 = "VRMA/111_28.vrma";
+    const defaultVrma  = "vrma/114_05.vrma";
+    const defaultVrma2 = "";
     const rawVrma  = paramVrma  || defaultVrma;
     const rawVrma2 = paramVrma2 || defaultVrma2;
     const vrmaPath  = (rawVrma.startsWith("http") || rawVrma.startsWith("../")) ? rawVrma : "../" + rawVrma;
-    const vrmaPath2 = (rawVrma2.startsWith("http") || rawVrma2.startsWith("../")) ? rawVrma2 : "../" + rawVrma2;
+    const vrmaPath2 = rawVrma2 ? ((rawVrma2.startsWith("http") || rawVrma2.startsWith("../")) ? rawVrma2 : "../" + rawVrma2) : '';
     const vrmaName  = rawVrma.split("/").pop();
-    const vrmaName2 = rawVrma2.split("/").pop();
+    const vrmaName2 = rawVrma2 ? rawVrma2.split("/").pop() : '';
     const blendWeight = paramBlend !== null ? Math.min(1, Math.max(0, parseFloat(paramBlend))) : 0.5;
     const frameFrom = params.get('from') ? parseInt(params.get('from'), 10) : null;
     const frameTo   = params.get('to') ? parseInt(params.get('to'), 10) : null;
+    const paramFixRoot = params.get('fixroot');
+    const useFixRoot = paramFixRoot !== null ? paramFixRoot !== '0' : true;
+    const paramFixAnim = params.get('fixanim');
+    const useFixAnim = paramFixAnim !== null ? paramFixAnim !== '0' : true;
+
 
     document.getElementById("ui-model").textContent = modelName;
     document.getElementById("ui-vrma").textContent = vrmaName + (frameFrom !== null ? ` f${frameFrom}-${frameTo ?? 'end'}` : '');
-    document.getElementById("ui-vrma2").textContent = vrmaName2;
+    document.getElementById("ui-vrma2").textContent = vrmaName2 || '(none)';
     document.getElementById("ui-blend").textContent = blendWeight.toFixed(2);
     document.getElementById("help").textContent = "WASD move · Q/E up/down · Mouse orbit · Scroll zoom · R reset view";
 
@@ -136,10 +141,17 @@
     const preMgrCount = scene.metadata?.vrmManagers?.length ?? 0;
     const preRootIds = new Set(scene.rootNodes.map(n => n.uniqueId));
 
+    console.log(`[model.html] Loading VRM: ${vrmPath}  (vrmPath: "${vrmPath}", preMgrCount: ${preMgrCount}, preRootIds: ${preRootIds.size})`);
+
     BABYLON.SceneLoader.ImportMeshAsync(null, vrmPath, null, scene).then(async () => {
+      console.log(`[model.html] ImportMeshAsync resolved. scene.metadata?.vrmManagers?.length = ${scene.metadata?.vrmManagers?.length ?? 0}`);
       const mgr = scene.metadata?.vrmManagers?.[preMgrCount];
       const root = scene.rootNodes.find(n => !preRootIds.has(n.uniqueId));
-      if (!mgr || !root) return;
+      console.log(`[model.html] mgr = ${!!mgr}, root = ${!!root}  (${root?.name ?? 'none'})`);
+      if (!mgr || !root) {
+        console.warn(`[model.html] Bailing: mgr=${!!mgr} root=${!!root}`);
+        return;
+      }
 
       const hips = mgr.humanoidBone?.hips;
       if (hips) {
@@ -160,40 +172,119 @@
         return map;
       }
 
+
+
       async function loadVRMA(path, name) {
-        const preCount = (scene.metadata?.vrmAnimationManagers ?? []).length;
-        const container = await BABYLON.LoadAssetContainerAsync(path, scene);
+        if (!path) return null;
+        let preCount, container;
+        try {
+          preCount = (scene.metadata?.vrmAnimationManagers ?? []).length;
+          container = await BABYLON.LoadAssetContainerAsync(path, scene);
+        } catch {
+          console.warn(`VRMA not found: ${path}`);
+          return null;
+        }
         const vrmAnimMgr = (scene.metadata?.vrmAnimationManagers ?? [])[preCount];
         const srcGroup = container.animationGroups[0];
         if (!vrmAnimMgr?.animationMap || !srcGroup) { container.dispose(); return null; }
 
         const mapNodeNames = buildMapNodeNames(srcGroup, vrmAnimMgr);
+        let srcFrom = 0, srcTo = 1;
+        if (isFinite(srcGroup.from) && srcGroup.from >= 0) srcFrom = srcGroup.from;
+        if (isFinite(srcGroup.to) && srcGroup.to > srcFrom) srcTo = srcGroup.to;
         const remapped = vrmAvatar.retargetAnimationGroup(srcGroup, {
           animationGroupName: name,
-          fixAnimations: true,
-          fixRootPosition: true,
+          fixAnimations: useFixAnim,
+          fixRootPosition: useFixRoot,
           rootNodeName: mgr.humanoidBone['hips']?.name,
           groundReferenceNodeName: mgr.humanoidBone['leftFoot']?.name,
           mapNodeNames,
         });
+
         container.dispose();
-        return remapped;
+        return { group: remapped, srcFrom, srcTo };
       }
 
+      // Debug: count visible meshes
+      const meshes = scene.meshes.filter(m => m.getTotalVertices?.() > 0);
+      const vis = meshes.filter(m => m.isVisible !== false);
+      console.log(`[model.html] Meshes: ${scene.meshes.length} total, ${meshes.length} with verts, ${vis.length} visible`);
+      if (meshes.length > 0) {
+        let c = meshes[0].getBoundingInfo()?.boundingBox?.center;
+        if (c) console.log(`[model.html] First mesh center: (${c.x.toFixed(3)}, ${c.y.toFixed(3)}, ${c.z.toFixed(3)})`);
+      }
+      // Mark origin with a small sphere
+      const dot = BABYLON.MeshBuilder.CreateSphere("origin", { diameter: 0.1 }, scene);
+      dot.position.set(0, 0, 0);
+
       const vrmAvatar = new BABYLON.AnimatorAvatar('avatar', root);
-      const group1 = await loadVRMA(vrmaPath,  'vrma1');
-      const group2 = await loadVRMA(vrmaPath2, 'vrma2');
+      console.log(`[model.html] AnimatorAvatar created. Loading VRMAs...`);
+      console.log(`  vrmaPath=${vrmaPath}, vrmaPath2=${vrmaPath2 || '(none)'}`);
+      const r1 = await loadVRMA(vrmaPath,  'vrma1');
+      const r2 = vrmaPath2 ? await loadVRMA(vrmaPath2, 'vrma2') : null;
+      const group1 = r1?.group ?? null;
+      const group2 = r2?.group ?? null;
+      console.log(`[model.html] groups: group1=${!!group1} group2=${!!group2}`);
 
       if (group1) {
-        const from = frameFrom ?? group1.from;
-        const to = frameTo ?? group1.to;
-        group1.weight = 1 - blendWeight;
+        const from = frameFrom ?? r1.srcFrom;
+        const to = frameTo ?? r1.srcTo;
+        group1.weight = group2 ? 1 - blendWeight : 1;
+        console.log(`[model.html] Starting group1: weight=${group1.weight}, from=${from}, to=${to}`);
         group1.start(false, 1.0, from, to, false);
       }
       if (group2) {
         group2.weight = blendWeight;
+        console.log(`[model.html] Starting group2: weight=${group2.weight}`);
         group2.start(false, 1.0, group2.from, group2.to, false);
       }
+      console.log(`[model.html] Done.`);
+
+      // Diagnose position after a frame
+      setTimeout(() => {
+        try {
+          const h = mgr.humanoidBone?.hips;
+          if (h) {
+            h.computeWorldMatrix(true);
+            const p = h.getAbsolutePosition();
+            const s = h.scaling ?? { x:1, y:1, z:1 };
+            const rot = h.rotationQuaternion ?? h.rotation;
+            const ang = rot instanceof BABYLON.Quaternion
+              ? 2 * Math.acos(Math.min(1, Math.abs(rot.w))) * 180 / Math.PI
+              : 0;
+            console.log(`[diag] Hips worldPos=(${p.x.toFixed(3)}, ${p.y.toFixed(3)}, ${p.z.toFixed(3)}) scale=(${s.x.toFixed(3)}, ${s.y.toFixed(3)}, ${s.z.toFixed(3)}) angle=${ang.toFixed(1)}°`);
+          }
+          const camWorldPos = camera.position;
+          console.log(`[diag] Camera worldPos=(${camWorldPos.x.toFixed(3)}, ${camWorldPos.y.toFixed(3)}, ${camWorldPos.z.toFixed(3)}) target=(${camTarget.x.toFixed(3)}, ${camTarget.y.toFixed(3)}, ${camTarget.z.toFixed(3)}) radius=${camera.radius?.toFixed(3) ?? '?'}`);
+
+          // Check all mesh bounding info
+          const allWithVerts = scene.meshes.filter(m => m.getTotalVertices?.() > 0);
+          let minY = Infinity, maxY = -Infinity;
+          let farthest = 0, farthestName = '';
+          const camPos = camera.position;
+          allWithVerts.forEach(m => {
+            const b = m.getBoundingInfo()?.boundingBox;
+            if (!b) return;
+            const c = b.center;
+            if (c.y - b.extendSize.y < minY) minY = c.y - b.extendSize.y;
+            if (c.y + b.extendSize.y > maxY) maxY = c.y + b.extendSize.y;
+            const dist = BABYLON.Vector3.Distance(camPos, c);
+            if (dist > farthest) { farthest = dist; farthestName = m.name; }
+          });
+          console.log(`[diag] Mesh bbox Y range: ${minY.toFixed(3)} to ${maxY.toFixed(3)} (height=${(maxY - minY).toFixed(3)}m)`);
+          console.log(`[diag] Farthest mesh: ${farthestName} at ${farthest.toFixed(1)}m (far plane: ${camera.maxZ ?? 100})`);
+
+          // Check if Hips world pos matches expectations
+          if (h) {
+            const p = h.getAbsolutePosition();
+            if (p.y < 0 || p.y > 3) console.warn(`[diag] Hips Y=${p.y.toFixed(3)} — character is ${p.y < 0 ? 'below ground' : 'floating'}`);
+          }
+        } catch (e) {
+          console.error(`[diag] Error:`, e);
+        }
+      }, 100);
+    }).catch(e => {
+      console.error(`[model.html] ImportMeshAsync FAILED:`, e);
     });
 
     // Render loop with WASD movement

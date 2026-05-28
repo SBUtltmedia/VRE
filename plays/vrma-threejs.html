@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Three.js VRMA Viewer</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: monospace; }
+        canvas { display: block; }
+        #info { position: fixed; top: 10px; left: 10px; color: #0f0; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 4px; font-size: 12px; pointer-events: none; z-index: 10; }
+        #info a { color: #0ff; pointer-events: auto; }
+    </style>
+</head>
+<body>
+    <div id="info">Loading...</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="../js/three-vrm.js"></script>
+    <script src="../js/three-vrm-animation.js"></script>
+
+    <script>
+    const info = document.getElementById('info');
+    const params = new URLSearchParams(location.search);
+    const vrmPath = params.get('vrm') || '../models/Seed-san.vrm';
+    const vrmaPath = params.get('vrma') || '../vrma/02_01.vrma';
+    const doFlip = params.get('flip') !== '0';
+    const doAccum = params.get('accum') !== '0';
+    const vrmName = vrmPath.split('/').pop();
+    const vrmaName = vrmaPath.split('/').pop();
+
+    info.innerHTML = `VRM: ${vrmName}<br>VRMA: ${vrmaName}<br>accum=${doAccum} flip=${doFlip}`;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x888888);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 1.5, 3);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 1, 0);
+    controls.update();
+
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
+    scene.add(hemi);
+    const dir = new THREE.DirectionalLight(0xffffff, 1.5);
+    dir.position.set(1, 2, 1);
+    dir.castShadow = true;
+    scene.add(dir);
+    scene.add(new THREE.AmbientLight(0x444444));
+
+    const grid = new THREE.GridHelper(10, 10);
+    scene.add(grid);
+
+    let vrm, mixer, clipAction, animClip;
+    let rootNode = new THREE.Group();
+    scene.add(rootNode);
+    const rootAccum = new THREE.Vector3();
+    let prevHipsPos = null;
+    const _pos = new THREE.Vector3();
+
+    // Shadow receiver plane
+    const planeGeo = new THREE.PlaneGeometry(10, 10);
+    const planeMat = new THREE.ShadowMaterial({ opacity: 0.3 });
+    const plane = new THREE.Mesh(planeGeo, planeMat);
+    plane.rotation.x = -Math.PI / 2;
+    plane.position.y = -0.01;
+    plane.receiveShadow = true;
+    scene.add(plane);
+
+    const clock = new THREE.Clock();
+
+    // VRMAnimationLoaderPlugin with specVersion fix (matching animate.html)
+    function createVRMAnimationPlugin() {
+        return function(parser) {
+            const plugin = new THREE.VRMAnimationLoaderPlugin(parser);
+            const originalAfterRoot = plugin.afterRoot.bind(plugin);
+            plugin.afterRoot = async function(gltf) {
+                const ext = gltf.parser.json.extensions;
+                if (ext && ext.VRMC_vrm_animation && !ext.VRMC_vrm_animation.specVersion) {
+                    ext.VRMC_vrm_animation.specVersion = '1.0';
+                }
+                return originalAfterRoot(gltf);
+            };
+            return plugin;
+        };
+    }
+
+    // Load VRM via FileLoader + GLTFLoader.parse
+    console.log('Loading VRM:', vrmPath);
+    const vrmFileLoader = new THREE.FileLoader(THREE.DefaultLoadingManager);
+    vrmFileLoader.setResponseType('arraybuffer');
+    vrmFileLoader.load(vrmPath, (buf) => {
+        const gltfLoader = new THREE.GLTFLoader();
+        gltfLoader.register((plugin) => new THREE_VRM.VRMLoaderPlugin(plugin)); // needed for VRM metadata
+        gltfLoader.parse(buf, '', (gltf) => {
+            vrm = gltf.userData.vrm;
+            if (!vrm) {
+                info.innerHTML = 'ERROR: No VRM data in model';
+                return;
+            }
+            const version = vrm.meta?.metaVersion ?? '?';
+            console.log(`VRM loaded: ${vrmName}, version=${version}`);
+
+            vrm.scene.traverse((c) => {
+                if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; }
+            });
+            rootNode.add(vrm.scene);
+            vrm.scene.position.set(0, 0, 0);
+
+            const box = new THREE.Box3().setFromObject(vrm.scene);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            controls.target.set(center.x, center.y + size.y * 0.3, center.z);
+            controls.update();
+
+            // Load VRMA
+            console.log('Loading VRMA:', vrmaPath);
+            const fileLoader = new THREE.FileLoader(THREE.DefaultLoadingManager);
+            fileLoader.setResponseType('arraybuffer');
+            fileLoader.load(vrmaPath, (buf2) => {
+                const loader2 = new THREE.GLTFLoader();
+                loader2.register(createVRMAnimationPlugin());
+                loader2.parse(buf2, '', (animGltf) => {
+                    const vrmAnimations = animGltf.userData.vrmAnimations;
+                    if (!vrmAnimations || vrmAnimations.length === 0) {
+                        info.innerHTML += '<br>ERROR: No VRMA animations found';
+                        return;
+                    }
+                    processAnimation(vrmAnimations[0], version);
+                }, (err) => {
+                    info.innerHTML += `<br>VRMA parse error: ${err.message}`;
+                    console.error(err);
+                });
+            }, undefined, (err) => {
+                info.innerHTML += `<br>VRMA load error: ${err.message}`;
+                console.error(err);
+            });
+        }, (err) => {
+            info.innerHTML = `ERROR parsing VRM: ${err.message}`;
+            console.error(err);
+        });
+    }, undefined, (err) => {
+        info.innerHTML = `ERROR loading VRM: ${err.message}`;
+        console.error(err);
+    });
+
+    function processAnimation(vrmAnim, version) {
+        animClip = THREE_VRM_ANIMATION.createVRMAnimationClip(vrmAnim, vrm);
+
+        // Optional quaternion flip for coordinate system
+        if (doFlip) {
+            animClip.tracks.forEach((track) => {
+                if (track.name.endsWith('.quaternion')) {
+                    const v = track.values;
+                    for (let i = 0; i < v.length; i += 4) {
+                        v[i] = -v[i];
+                        v[i + 2] = -v[i + 2];
+                    }
+                    for (let i = 4; i < v.length; i += 4) {
+                        let dot = v[i-4]*v[i] + v[i-3]*v[i+1] + v[i-2]*v[i+2] + v[i-1]*v[i+3];
+                        if (dot < 0) {
+                            v[i] = -v[i]; v[i+1] = -v[i+1];
+                            v[i+2] = -v[i+2]; v[i+3] = -v[i+3];
+                        }
+                    }
+                }
+            });
+        }
+
+        mixer = new THREE.AnimationMixer(vrm.scene);
+        clipAction = mixer.clipAction(animClip);
+        clipAction.play();
+
+        info.innerHTML = `VRM: ${vrmName} (v${version})<br>VRMA: ${vrmaName}<br>accum=${doAccum} flip=${doFlip}<br>Duration: ${animClip.duration.toFixed(2)}s &bull; Tracks: ${animClip.tracks.length}`;
+
+        if (doAccum) {
+            prevHipsPos = null;
+        }
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        const delta = clock.getDelta();
+
+        if (mixer && vrm) {
+            const hips = vrm.humanoid?.getNormalizedBoneNode?.('hips');
+
+            // Accumulate root motion: reset root, sample Hips delta, re-apply
+            if (doAccum && hips) {
+                rootNode.position.set(0, 0, 0);
+                vrm.scene.updateWorldMatrix(true, true);
+                hips.getWorldPosition(_pos);
+                if (prevHipsPos) {
+                    rootAccum.x += _pos.x - prevHipsPos.x;
+                    rootAccum.z += _pos.z - prevHipsPos.z;
+                }
+                prevHipsPos.copy(_pos);
+                rootNode.position.copy(rootAccum);
+            }
+
+            mixer.update(delta);
+            vrm.update(delta);
+        }
+
+        controls.update();
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+    </script>
+</body>
+</html>

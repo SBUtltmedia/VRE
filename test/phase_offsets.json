@@ -1,18 +1,100 @@
 {
-  "VRMA/16_19.vrma": {
-    "description": "walk-turn-90-right",
-    "totalFrames": 206,
-    "optimalFrom": 62,
-    "minDelta": 10.7,
-    "minBone": "RightToeBase",
-    "fullRangeDelta": 48.5
+  "vrma/02_01.vrma": {
+    "totalFrames": 171.99982166290283,
+    "optimalFrom": 100,
+    "minDelta": 18.7,
+    "minBone": "LeftLeg",
+    "fullRangeDelta": 74.7
   },
-  "VRMA/104_27.vrma": {
-    "description": "RegularWalkRightAngleTurns",
-    "totalFrames": 1218,
+  "vrma/05_01.vrma": {
+    "totalFrames": 299.9997138977051,
+    "optimalFrom": 54,
+    "minDelta": 24.4,
+    "minBone": "LeftUpLeg",
+    "fullRangeDelta": 43.3
+  },
+  "vrma/08_05.vrma": {
+    "totalFrames": 149.99985694885254,
+    "optimalFrom": 80,
+    "minDelta": 12.2,
+    "minBone": "LeftArm",
+    "fullRangeDelta": 61.5
+  },
+  "vrma/09_01.vrma": {
+    "totalFrames": 73.99992942810059,
+    "optimalFrom": 26,
+    "minDelta": 28,
+    "minBone": "LeftHandIndex1",
+    "fullRangeDelta": 69.1
+  },
+  "vrma/08_07.vrma": {
+    "totalFrames": 151.9998550415039,
     "optimalFrom": 70,
-    "minDelta": 6.5,
+    "minDelta": 17.8,
+    "minBone": "LeftHand",
+    "fullRangeDelta": 35.1
+  },
+  "vrma/02_03.vrma": {
+    "totalFrames": 85.99991083145142,
+    "optimalFrom": 84,
+    "minDelta": 12.2,
+    "minBone": "RightLeg",
+    "fullRangeDelta": 34.4
+  },
+  "vrma/07_12.vrma": {
+    "totalFrames": 131.99987411499023,
+    "optimalFrom": 20,
+    "minDelta": 29.8,
+    "minBone": "LeftArm",
+    "fullRangeDelta": 52.2
+  },
+  "vrma/104_02.vrma": {
+    "totalFrames": 441.99954986572266,
+    "optimalFrom": 98,
+    "minDelta": 27.2,
+    "minBone": "LeftLeg",
+    "fullRangeDelta": 30.5
+  },
+  "vrma/104_44.vrma": {
+    "totalFrames": 543.9994812011719,
+    "optimalFrom": 90,
+    "minDelta": 12.9,
+    "minBone": "RightToeBase",
+    "fullRangeDelta": 21.9
+  },
+  "vrma/02_04.vrma": {
+    "totalFrames": 241.99976921081543,
+    "optimalFrom": 0,
+    "minDelta": 13.6,
+    "minBone": "RightForeArm",
+    "fullRangeDelta": 13.6
+  },
+  "vrma/07_01.vrma": {
+    "totalFrames": 157.99983501434326,
+    "optimalFrom": 95,
+    "minDelta": 8.8,
+    "minBone": "LeftFoot",
+    "fullRangeDelta": 68
+  },
+  "vrma/104_31.vrma": {
+    "totalFrames": 643.9993286132812,
+    "optimalFrom": 63,
+    "minDelta": 20.6,
+    "minBone": "LeftForeArm",
+    "fullRangeDelta": 93.2
+  },
+  "vrma/75_17.vrma": {
+    "totalFrames": 161.999831199646,
+    "optimalFrom": 0,
+    "minDelta": 7.4,
     "minBone": "RightArm",
-    "fullRangeDelta": 10.0
+    "fullRangeDelta": 7.4
+  },
+  "vrma/111_28.vrma": {
+    "totalFrames": 953.9990615844727,
+    "optimalFrom": 0,
+    "minDelta": 164.1,
+    "minBone": "RightHandThumb1",
+    "fullRangeDelta": 164.1
   }
 }

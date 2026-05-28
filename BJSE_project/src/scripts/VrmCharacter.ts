@@ -1,7 +1,7 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Scene } from "@babylonjs/core/scene";
 
-import { IScript, visibleAsString, visibleAsBoolean } from "babylonjs-editor-tools";
+import { IScript, visibleAsString, visibleAsBoolean, visibleAsNumber } from "babylonjs-editor-tools";
 
 import { loadVrm, loadVrmLoader } from "../VrmLoader";
 import { VrmaPlayer } from "../VrmaPlayer";
@@ -21,6 +21,9 @@ export default class VrmCharacter implements IScript {
 
     @visibleAsBoolean("Loop VRMA", true)
     public loopVrma: boolean = true;
+
+    @visibleAsNumber("Transition Duration", 0.5)
+    public transitionDuration: number = 0.5;
 
     @visibleAsString("A2F JSON URL", "audio/a2f_sample.json")
     public a2fJsonUrl: string = "audio/a2f_sample.json";
@@ -65,6 +68,7 @@ export default class VrmCharacter implements IScript {
             }
 
             this._player = new VrmaPlayer(scene, this._vrm);
+            this._player.transitionDuration = this.transitionDuration;
             this._faceDriver = new ARKitFaceDriver(this._vrm.manager, scene);
 
             if (this.a2fJsonUrl) {

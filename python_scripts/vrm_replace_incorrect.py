@@ -3,11 +3,11 @@ vrm_replace_incorrect.py - Replace incorrect VRMA files and clean up artifacts.
 
 Replaces specified VRMA files with corrected versions (e.g., replaces a broken
 VRMA with animation data sourced from a known-good VRMA). Also removes old
-split-file artifacts from the VRMA/split/ directory.
+split-file artifacts from the vrma/split/ directory.
 
 Usage:
-  python vrm_replace_incorrect.py VRMA/split              # remove split dir
-  python vrm_replace_incorrect.py VRMA/114_05.vrma --source VRMA/75_17.vrma
+  python vrm_replace_incorrect.py vrma/split              # remove split dir
+  python vrm_replace_incorrect.py vrma/114_05.vrma --source vrma/75_17.vrma
 """
 
 import os
@@ -74,7 +74,7 @@ def main():
     for target in args.target:
         normalized = target.replace('/', os.sep)
 
-        if normalized == 'VRMA\\split' or normalized == 'VRMA/split':
+        if normalized == 'VRMA\\split' or normalized == 'vrma/split':
             remove_split_directory(normalized)
             continue
 

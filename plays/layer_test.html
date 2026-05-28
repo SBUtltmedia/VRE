@@ -58,15 +58,15 @@
 
     <label>Gesture VRMA</label>
     <select id="gesture-select">
-      <option value="VRMA/13_04.vrma">chin in hand (sit)</option>
-      <option value="VRMA/13_05.vrma">fidget (sit)</option>
-      <option value="VRMA/13_06.vrma">elbow out (sit)</option>
-      <option value="VRMA/13_07.vrma">drink soda (sit)</option>
-      <option value="VRMA/22_03.vrma">face in hands (sit)</option>
-      <option value="VRMA/111_16.vrma">peekaboo</option>
-      <option value="VRMA/111_25.vrma">shrug</option>
-      <option value="VRMA/111_37.vrma">wave</option>
-      <option value="VRMA/02_05.vrma">punch/strike</option>
+      <option value="vrma/13_04.vrma">chin in hand (sit)</option>
+      <option value="vrma/13_05.vrma">fidget (sit)</option>
+      <option value="vrma/13_06.vrma">elbow out (sit)</option>
+      <option value="vrma/13_07.vrma">drink soda (sit)</option>
+      <option value="vrma/22_03.vrma">face in hands (sit)</option>
+      <option value="vrma/111_16.vrma">peekaboo</option>
+      <option value="vrma/111_25.vrma">shrug</option>
+      <option value="vrma/111_37.vrma">wave</option>
+      <option value="vrma/02_05.vrma">punch/strike</option>
     </select>
 
     <button id="btn-play">Play Gesture</button>
@@ -74,13 +74,13 @@
 
     <label>Idle VRMA</label>
     <select id="idle-select">
-      <option value="VRMA/114_05.vrma">Sitting in chair</option>
-      <option value="VRMA/111_28.vrma">Standing still</option>
-      <option value="VRMA/111_14.vrma">Mope</option>
-      <option value="VRMA/40_10.vrma">Wait for bus</option>
-      <option value="VRMA/75_17.vrma">Medium sit</option>
-      <option value="VRMA/75_18.vrma">High sit</option>
-      <option value="VRMA/75_20.vrma">Low sit</option>
+      <option value="vrma/114_05.vrma">Sitting in chair</option>
+      <option value="vrma/111_28.vrma">Standing still</option>
+      <option value="vrma/111_14.vrma">Mope</option>
+      <option value="vrma/40_10.vrma">Wait for bus</option>
+      <option value="vrma/75_17.vrma">Medium sit</option>
+      <option value="vrma/75_18.vrma">High sit</option>
+      <option value="vrma/75_20.vrma">Low sit</option>
     </select>
 
     <button id="btn-change-idle">Change Idle</button>
@@ -162,7 +162,7 @@
 
       const vrmAvatar = new BABYLON.AnimatorAvatar("avatar-test", root);
       actor = { mgr, root, vrmAvatar, idleGroup: null, gestureGroup: null };
-      loadIdle("VRMA/114_05.vrma");
+      loadIdle("vrma/114_05.vrma");
     });
 
     // ── VRMA loading & retargeting ──────────────────────────────────────────────

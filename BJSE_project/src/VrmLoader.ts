@@ -11,7 +11,9 @@
 
 import { VrmModel } from './VrmModel';
 
-const VRM_LOADER_URL = 'https://xuhuisheng.github.io/babylonjs-vrm/babylon-vrm-loader.js';
+// Local paths to our VRM loader fork
+import babylonVrmLoaderRaw from '!!raw-loader!./lib/vrm/babylon-vrm-loader.js';
+import vrm1LoaderRaw from '!!raw-loader!./lib/vrm/vrm1-loader.js';
 
 /** Lazy accessor — avoids capturing window.BABYLON at module load time. */
 function getB(): any {
@@ -20,76 +22,50 @@ function getB(): any {
   return b;
 }
 
-/** Inject the babylonjs-vrm CDN loader once. Idempotent.
- *
- * Two strategies:
- *   Electron (BJSE): fetch + vm.runInThisContext — bypasses browser CSP on
- *     script tag injection that Electron's editor window often enforces.
- *     Also sets up window.BABYLON and window.LOADERS which the CDN script
- *     reads as free globals (babylon-vrm-loader.js uses them directly).
- *   Browser (babvrm.html, Vite): standard <script> tag injection
- *     (assumes window.BABYLON and window.LOADERS are already set by CDN scripts).
- *
- * Detection: process.versions.electron is set in Electron renderer processes.
+/** 
+ * Initialize the VRM loader using local forked source.
+ * Idempotent.
  */
 export async function loadVrmLoader(): Promise<void> {
   if ((window as any).__vrmLoaderReady) return;
 
-  const isElectron = typeof process !== 'undefined'
-    && !!(process as any).versions?.electron;
-
-  if (isElectron) {
-    // ── Set up window.BABYLON ──────────────────────────────────────────
-    // babylon-vrm-loader.js reads window.BABYLON as a free global.
-    // BJSE uses @babylonjs/core (ES modules) but also loads babylonjs (UMD)
-    // via preload.js → require('babylonjs-materials') → require('babylonjs').
-    // BJSE's overrides.js patches require() so 'babylonjs' resolves into the
-    // app bundle, making require('babylonjs') work from our plugin context too.
-    if (!(window as any).BABYLON) {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        (window as any).BABYLON = require('babylonjs');
-      } catch {
-        // Fallback: search require.cache for the already-loaded babylonjs module
-        const babylon = findCachedModule('/node_modules/babylonjs/');
-        if (babylon) (window as any).BABYLON = babylon;
-      }
+  // Ensure window.BABYLON and window.LOADERS are set (required by babylon-vrm-loader)
+  if (!(window as any).BABYLON) {
+    try {
+      (window as any).BABYLON = require('babylonjs');
+    } catch {
+      const babylon = findCachedModule('/node_modules/babylonjs/');
+      if (babylon) (window as any).BABYLON = babylon;
     }
+  }
 
-    // ── Set up window.LOADERS ─────────────────────────────────────────
-    // babylon-vrm-loader.js does `const Q = LOADERS` (free variable) — it
-    // expects window.LOADERS to be the babylonjs-loaders namespace.
-    // BJSE's overrides.js patches require so 'babylonjs-loaders' resolves
-    // into the app bundle, and assets-browser.js pre-loads it so it is
-    // already in require.cache.
-    if (!(window as any).LOADERS) {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        (window as any).LOADERS = require('babylonjs-loaders');
-      } catch {
-        // Fallback: search require.cache
-        const loaders = findCachedModule('/node_modules/babylonjs-loaders/');
-        if (loaders) (window as any).LOADERS = loaders;
-        else (window as any).LOADERS = (window as any).BABYLON; // last resort
-      }
+  if (!(window as any).LOADERS) {
+    try {
+      (window as any).LOADERS = require('babylonjs-loaders');
+    } catch {
+      const loaders = findCachedModule('/node_modules/babylonjs-loaders/');
+      if (loaders) (window as any).LOADERS = loaders;
+      else (window as any).LOADERS = (window as any).BABYLON;
     }
+  }
 
-    // ── Run the CDN script ────────────────────────────────────────────
-    const resp = await fetch(VRM_LOADER_URL);
-    if (!resp.ok) throw new Error(`[VrmLoader] CDN fetch failed: HTTP ${resp.status}`);
-    const code = await resp.text();
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const vm: typeof import('vm') = require('vm');
-    vm.runInThisContext(code);
-  } else {
-    // Browser: standard <script> tag
-    await new Promise<void>((resolve, reject) => {
-      const s = document.createElement('script');
-      s.src = VRM_LOADER_URL;
-      s.onload  = resolve as () => void;
-      s.onerror = reject;
-      document.head.appendChild(s);
-    });
+  // Execute the forked loader code
+  try {
+    const isElectron = typeof process !== 'undefined' && !!(process as any).versions?.electron;
+    
+    if (isElectron) {
+      const vm: typeof import('vm') = require('vm');
+      vm.runInThisContext(babylonVrmLoaderRaw);
+      vm.runInThisContext(vrm1LoaderRaw);
+    } else {
+      // Browser fallback (eval is safest for raw-loaded UMD bundles)
+      eval(babylonVrmLoaderRaw);
+      eval(vrm1LoaderRaw);
+    }
+    console.log('[VrmLoader] Forked VRM loaders initialized locally');
+  } catch (err) {
+    console.error('[VrmLoader] Failed to initialize local loaders:', err);
+    throw err;
   }
 
   (window as any).__vrmLoaderReady = true;

@@ -1,0 +1,24 @@
+{
+  "actor": {
+    "id": "test-character",
+    "vrm": "models/AIAN/AIAN_F_1_Casual.vrm",
+    "startPosition": { "x": 0, "y": 0, "z": 0 },
+    "defaultBlend": 200
+  },
+  "sequence": [
+    { "name": "02_01", "clip": "vrma/02_01.vrma" },
+    { "name": "05_01", "clip": "vrma/05_01.vrma" },
+    { "name": "08_05", "clip": "vrma/08_05.vrma" },
+    { "name": "09_01", "clip": "vrma/09_01.vrma" },
+    { "name": "08_07", "clip": "vrma/08_07.vrma" },
+    { "name": "02_03", "clip": "vrma/02_03.vrma" },
+    { "name": "07_12", "clip": "vrma/07_12.vrma" },
+    { "name": "104_02", "clip": "vrma/104_02.vrma" },
+    { "name": "104_44", "clip": "vrma/104_44.vrma" },
+    { "name": "02_04", "clip": "vrma/02_04.vrma" },
+    { "name": "07_01", "clip": "vrma/07_01.vrma" },
+    { "name": "104_31", "clip": "vrma/104_31.vrma" },
+    { "name": "75_17", "clip": "vrma/75_17.vrma" },
+    { "name": "111_28", "clip": "vrma/111_28.vrma" }
+  ]
+}

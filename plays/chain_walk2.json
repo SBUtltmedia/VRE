@@ -10,7 +10,7 @@
     "defaultBlend": 200
   },
   "sequence": [
-    { "name": "walk-turn-90-1", "clip": "VRMA/104_27.vrma", "from": 0 },
-    { "name": "walk-turn-90-2", "clip": "VRMA/104_27.vrma", "from": 70, "blend": 200 }
+    { "name": "walk-turn-90-1", "clip": "vrma/104_27.vrma", "from": 0 },
+    { "name": "walk-turn-90-2", "clip": "vrma/104_27.vrma", "from": 70, "blend": 200 }
   ]
 }

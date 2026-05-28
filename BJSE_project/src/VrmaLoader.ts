@@ -61,14 +61,20 @@ export async function buildVrmaClip(
     throw new Error(`[VrmaLoader] No animation data in ${vrmaUrl}`);
   }
 
-  // Translation scale: match VRMA rig proportions to VRM skeleton
+  // Translation scale: match VRMA rig proportions to VRM skeleton.
+  // We use the Hips Y position from the VRMA's first keyframe (as the source reference)
+  // and the actor's T-pose hipsY (calculated at load time) as the target reference.
   let translationScale = 1;
   const hipsEntry = [...vrmAnimMgr.animationMap.entries()]
     .find(([, name]: [number, string]) => name === 'hips');
+  
   if (hipsEntry) {
-    const vrmaHipsY = animGroup.targetedAnimations[hipsEntry[0]]
-      ?.target?.absolutePosition?.y ?? 0;
-    if (vrmaHipsY !== 0) translationScale = vrm.hipsY / vrmaHipsY;
+    const hipsAnim = animGroup.targetedAnimations[hipsEntry[0]]?.animation;
+    if (hipsAnim && hipsAnim.targetProperty === 'position') {
+      const keys = hipsAnim.getKeys();
+      const vrmaHipsY = keys.length > 0 ? keys[0].value.y : 0;
+      if (vrmaHipsY !== 0) translationScale = vrm.hipsY / vrmaHipsY;
+    }
   }
 
   const group = new B.AnimationGroup(`vrma-${vrmaUrl}`, scene);
